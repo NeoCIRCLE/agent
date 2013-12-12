@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from twisted.internet import protocol, reactor, defer
+from twisted.internet import reactor, defer
 from twisted.internet.task import LoopingCall
 from twisted.internet.serialport import SerialPort
 
@@ -47,8 +47,8 @@ class Context(object):
                              'restart'])
         elif system == 'Windows':
             import wmi
-            nic_configs = wmi.WMI().Win32_NetworkAdapterConfiguration(IPEnabled=True)
-            nic = nic_configs[0]
+            w = wmi.WMI()
+            nic = w.Win32_NetworkAdapterConfiguration(IPEnabled=True)[0]
             assert nic.EnableDHCP()[0] == 0
 
     @staticmethod
@@ -67,15 +67,52 @@ class Context(object):
     def set_hostname(new_hostname):
         system = platform.system()
         if system == 'Linux':
-            pass
+            # /etc/hostname
+            proc = subprocess.Popen(['/usr/bin/sudo', '/usr/bin/tee',
+                                     '/etc/hostname'],
+                                    stdin=subprocess.PIPE)
+            proc.communicate(new_hostname)
+            # /etc/hosts
+            proc = subprocess.Popen(['/usr/bin/sudo', '/usr/bin/tee', '-a',
+                                     '/etc/hosts'],
+                                    stdin=subprocess.PIPE)
+            proc.communicate('127.0.1.1 %s\n' % new_hostname)
+            subprocess.call(['/usr/bin/sudo', '/bin/hostname',
+                             new_hostname])
         elif system == 'Windows':
             import wmi
             wmi.WMI().Win32_ComputerSystem()[0].Rename(new_hostname)
+
+    @staticmethod
+    def mount_store(host, username, password, key):
+        system = platform.system()
+        if system == 'Linux':
+            data = ('sshfs#%(username)s@%(host)s:home /home/cloud/sshfs '
+                    'fuse defaults,idmap=user,reconnect,_netdev,uid=1000,'
+                    'gid=1000,allow_other,StrictHostKeyChecking=no,'
+                    'IdentityFile=/home/cloud/.ssh/id_rsa 0 0\n')
+            proc = subprocess.Popen(['/usr/bin/sudo', '/usr/bin/tee', '-a',
+                                     '/etc/fstab'],
+                                    stdin=subprocess.PIPE)
+            proc.communicate(data % {'host': host,
+                                     'username': username,
+                                     'password': password})
+
+        elif system == 'Windows':
+            data = ('net use * /delete /yes\r\n'
+                    'timeout 5\r\n'
+                    'net use z: \\%(hostname)s\\%(username)s "%(password)s" '
+                    '/user:%(username)s')
+            with open(r'c:\Windows\System32\Repl\Import\Scripts'
+                      r'%s.bat' % username, 'w') as f:
+                f.write(data)
+
 
 class SerialLineReceiver(SerialLineReceiverBase):
     def connectionMade(self):
         self.send_command(command='agent_started',
                           args={})
+
         def shutdown():
             self.connectionLost2('shutdown')
             d = defer.Deferred()
@@ -105,6 +142,7 @@ class SerialLineReceiver(SerialLineReceiverBase):
                            args=args)
 
     def send_ipaddresses(self):
+        import netifaces
         args = {}
         interfaces = netifaces.interfaces()
         for i in interfaces:
@@ -134,6 +172,13 @@ class SerialLineReceiver(SerialLineReceiverBase):
             Context.restart_networking()
         elif command == 'set_time':
             Context.set_time(str(args['time']))
+        elif command == 'set_hostname':
+            Context.set_hostname(str(args['hostname']))
+        elif command == 'mount_store':
+            Context.mount_store(str(args['host']),
+                                str(args['username']),
+                                str(args['password']),
+                                str(args['key']))
 
     def handle_response(self, response, args):
         pass
