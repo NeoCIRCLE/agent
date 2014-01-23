@@ -1,0 +1,4 @@
+Twisted==13.2.0
+pyserial==2.7
+psutil==1.2.1
+uptime==3.0.1
