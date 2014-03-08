@@ -133,10 +133,14 @@ class SerialLineReceiver(SerialLineReceiverBase):
         self.lc.start(5, now=False)
 
     def send_status(self):
+        disk_usage = {(disk.device.replace('/', '_')):
+                      psutil.disk_usage(disk.mountpoint).percent
+                      for disk in psutil.disk_partitions()}
         args = {"cpu": dict(psutil.cpu_times().__dict__),
                 "ram": dict(psutil.virtual_memory().__dict__),
                 "swap": dict(psutil.swap_memory().__dict__),
                 "uptime": {"seconds": uptime.uptime()},
+                "disk": disk_usage,
                 "user": {"count": len(psutil.get_users())}}
         self.send_response(response='status',
                            args=args)
