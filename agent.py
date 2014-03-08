@@ -7,20 +7,48 @@ from twisted.internet.serialport import SerialPort
 import psutil
 import uptime
 import subprocess
+import fileinput
 #import netifaces
 import platform
 from datetime import datetime
 
 from utils import SerialLineReceiverBase
 
+fstab_template = ('sshfs#%(username)s@%(host)s:home /home/cloud/sshfs '
+                  'fuse defaults,idmap=user,reconnect,_netdev,uid=1000,'
+                  'gid=1000,allow_other,StrictHostKeyChecking=no,'
+                  'IdentityFile=/home/cloud/.ssh/id_rsa 0 0\n')
+
+
+system = platform.system()
+
+
+# http://stackoverflow.com/questions/12081310/
+# python-module-to-change-system-date-and-time
+def linux_set_time(time):
+    import ctypes
+    import ctypes.util
+
+    CLOCK_REALTIME = 0
+
+    class timespec(ctypes.Structure):
+        _fields_ = [("tv_sec", ctypes.c_long),
+                    ("tv_nsec", ctypes.c_long)]
+
+    librt = ctypes.CDLL(ctypes.util.find_library("rt"))
+
+    ts = timespec()
+    ts.tv_sec = int(time)
+    ts.tv_nsec = 0
+
+    librt.clock_settime(CLOCK_REALTIME, ctypes.byref(ts))
+
 
 class Context(object):
     @staticmethod
     def change_password(new_password):
-        system = platform.system()
         if system == 'Linux':
-            proc = subprocess.Popen(['/usr/bin/sudo',
-                                     '/usr/sbin/chpasswd'],
+            proc = subprocess.Popen(['/usr/sbin/chpasswd'],
                                     stdin=subprocess.PIPE)
             proc.communicate('cloud:%s\n' % new_password)
         elif system == 'Windows':
@@ -31,20 +59,13 @@ class Context(object):
 
     @staticmethod
     def restart_networking():
-        system = platform.system()
         if system == 'Linux':
-            interfaces = '''
-                auto lo
-                iface lo inet loopback
-                auto eth0
-                iface eth0 inet dhcp
-            '''
-            proc = subprocess.Popen(['/usr/bin/sudo', '/usr/bin/tee',
-                                     '/etc/network/interfaces'],
-                                    stdin=subprocess.PIPE)
-            proc.communicate(interfaces)
-            subprocess.call(['/usr/bin/sudo', '/etc/init.d/networking',
-                             'restart'])
+            with open('/etc/network/interfaces', 'w') as f:
+                f.write('auto lo\n'
+                        'iface lo inet loopback\n'
+                        'auto eth0\n'
+                        'iface eth0 inet dhcp\n')
+            subprocess.call(['/etc/init.d/networking', 'restart'])
         elif system == 'Windows':
             import wmi
             w = wmi.WMI()
@@ -53,10 +74,12 @@ class Context(object):
 
     @staticmethod
     def set_time(new_time):
-        system = platform.system()
         if system == 'Linux':
-            subprocess.call(['/usr/bin/sudo',
-                             '/etc/init.d/openntpd', 'restart'])
+            linux_set_time(float(new_time))
+            try:
+                subprocess.call(['/etc/init.d/openntpd', 'restart'])
+            except:
+                pass
         elif system == 'Windows':
             import win32api
             t = datetime.utcfromtimestamp(float(new_time))
@@ -65,38 +88,28 @@ class Context(object):
 
     @staticmethod
     def set_hostname(new_hostname):
-        system = platform.system()
         if system == 'Linux':
-            # /etc/hostname
-            proc = subprocess.Popen(['/usr/bin/sudo', '/usr/bin/tee',
-                                     '/etc/hostname'],
-                                    stdin=subprocess.PIPE)
-            proc.communicate(new_hostname)
-            # /etc/hosts
-            proc = subprocess.Popen(['/usr/bin/sudo', '/usr/bin/tee', '-a',
-                                     '/etc/hosts'],
-                                    stdin=subprocess.PIPE)
-            proc.communicate('127.0.1.1 %s\n' % new_hostname)
-            subprocess.call(['/usr/bin/sudo', '/bin/hostname',
-                             new_hostname])
+            with open('/etc/hostname', 'w') as f:
+                f.write(new_hostname)
+            with open('/etc/hosts', 'w') as f:
+                f.write('127.0.0.1 localhost'
+                        '127.0.1.1 %s\n' % new_hostname)
+            # set hostname
+            subprocess.call(['/bin/hostname', new_hostname])
         elif system == 'Windows':
             import wmi
             wmi.WMI().Win32_ComputerSystem()[0].Rename(new_hostname)
 
     @staticmethod
     def mount_store(host, username, password, key):
-        system = platform.system()
         if system == 'Linux':
-            data = ('sshfs#%(username)s@%(host)s:home /home/cloud/sshfs '
-                    'fuse defaults,idmap=user,reconnect,_netdev,uid=1000,'
-                    'gid=1000,allow_other,StrictHostKeyChecking=no,'
-                    'IdentityFile=/home/cloud/.ssh/id_rsa 0 0\n')
-            proc = subprocess.Popen(['/usr/bin/sudo', '/usr/bin/tee', '-a',
-                                     '/etc/fstab'],
-                                    stdin=subprocess.PIPE)
-            proc.communicate(data % {'host': host,
-                                     'username': username,
-                                     'password': password})
+            for line in fileinput.input('/etc/fstab', inplace=1):
+                if line.startswith('sshfs#'):
+                    line = ''
+
+            with open('/etc/fstab', 'a') as f:
+                f.write(fstab_template % {'host': host, 'username': username,
+                                          'password': password})
 
         elif system == 'Windows':
             data = ('net use * /delete /yes\r\n'
@@ -189,7 +202,6 @@ class SerialLineReceiver(SerialLineReceiverBase):
 
 
 def main():
-    system = platform.system()
     if system == 'Windows':
         port = r'\\.\COM1'
     else:
