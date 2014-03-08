@@ -21,6 +21,11 @@ fstab_template = ('sshfs#%(username)s@%(host)s:home /home/cloud/sshfs '
 
 
 system = platform.system()
+distros = {'Scientific Linux': 'rhel',
+           'CentOS': 'rhel',
+           'Debian': 'debian',
+           'Ubuntu': 'debian'}
+distro = distros[platform.linux_distribution()[0]]
 
 
 # http://stackoverflow.com/questions/12081310/
@@ -60,12 +65,19 @@ class Context(object):
     @staticmethod
     def restart_networking():
         if system == 'Linux':
-            with open('/etc/network/interfaces', 'w') as f:
-                f.write('auto lo\n'
-                        'iface lo inet loopback\n'
-                        'auto eth0\n'
-                        'iface eth0 inet dhcp\n')
-            subprocess.call(['/etc/init.d/networking', 'restart'])
+            if distro == 'debian':
+                with open('/etc/network/interfaces', 'w') as f:
+                    f.write('auto lo\n'
+                           'iface lo inet loopback\n'
+                           'auto eth0\n'
+                           'iface eth0 inet dhcp\n')
+                subprocess.call(['/etc/init.d/networking', 'restart'])
+            elif distro == 'rhel':
+                with open('/etc/sysconfig/network-scripts/ifcfg-eth0', 'w') as f:
+                    f.write('DEVICE=eth0\n'
+                            'BOOTPROTO=dhcp\n'
+                            'ONBOOT=yes\n')
+
         elif system == 'Windows':
             import wmi
             w = wmi.WMI()
@@ -77,7 +89,7 @@ class Context(object):
         if system == 'Linux':
             linux_set_time(float(new_time))
             try:
-                subprocess.call(['/etc/init.d/openntpd', 'restart'])
+                subprocess.call(['/etc/init.d/ntp', 'restart'])
             except:
                 pass
         elif system == 'Windows':
@@ -89,12 +101,21 @@ class Context(object):
     @staticmethod
     def set_hostname(new_hostname):
         if system == 'Linux':
-            with open('/etc/hostname', 'w') as f:
-                f.write(new_hostname)
+            if distro == 'debian':
+                with open('/etc/hostname', 'w') as f:
+                    f.write(new_hostname)
+            elif distro == 'rhel':
+                for line in fileinput.input('/etc/sysconfig/network',
+                                            inplace=1):
+                    if line.startswith('HOSTNAME='):
+                        print 'HOSTNAME=%s' % new_hostname
+                    else:
+                        print line.rstrip()
+
             with open('/etc/hosts', 'w') as f:
                 f.write('127.0.0.1 localhost'
                         '127.0.1.1 %s\n' % new_hostname)
-            # set hostname
+
             subprocess.call(['/bin/hostname', new_hostname])
         elif system == 'Windows':
             import wmi
