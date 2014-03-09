@@ -68,12 +68,13 @@ class Context(object):
             if distro == 'debian':
                 with open('/etc/network/interfaces', 'w') as f:
                     f.write('auto lo\n'
-                           'iface lo inet loopback\n'
-                           'auto eth0\n'
-                           'iface eth0 inet dhcp\n')
+                            'iface lo inet loopback\n'
+                            'auto eth0\n'
+                            'iface eth0 inet dhcp\n')
                 subprocess.call(['/etc/init.d/networking', 'restart'])
             elif distro == 'rhel':
-                with open('/etc/sysconfig/network-scripts/ifcfg-eth0', 'w') as f:
+                with open('/etc/sysconfig/network-scripts/ifcfg-eth0',
+                          'w') as f:
                     f.write('DEVICE=eth0\n'
                             'BOOTPROTO=dhcp\n'
                             'ONBOOT=yes\n')
