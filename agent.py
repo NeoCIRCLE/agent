@@ -1,14 +1,13 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 from twisted.internet import reactor, defer
 from twisted.internet.task import LoopingCall
 from twisted.internet.serialport import SerialPort
 
-import psutil
 import uptime
 import subprocess
 import fileinput
-#import netifaces
 import platform
 from datetime import datetime
 
@@ -25,7 +24,8 @@ distros = {'Scientific Linux': 'rhel',
            'CentOS': 'rhel',
            'Debian': 'debian',
            'Ubuntu': 'debian'}
-distro = distros[platform.linux_distribution()[0]]
+if system == 'Linux':
+    distro = distros[platform.linux_distribution()[0]]
 
 
 # http://stackoverflow.com/questions/12081310/
@@ -167,6 +167,9 @@ class SerialLineReceiver(SerialLineReceiverBase):
         self.lc.start(5, now=False)
 
     def send_status(self):
+        import psutil  # TODO ez azért kell itt van importálva, mert
+                       # windows alatt kilépéskor kressel tőle a python
+                       # így a service azt hiszi, hogy nem indult el rendesen
         disk_usage = {(disk.device.replace('/', '_')):
                       psutil.disk_usage(disk.mountpoint).percent
                       for disk in psutil.disk_partitions()}
