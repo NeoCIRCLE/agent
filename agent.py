@@ -142,6 +142,47 @@ class Context(object):
                       r'%s.bat' % username, 'w') as f:
                 f.write(data)
 
+    @staticmethod
+    def cleanup():
+        if system == 'Linux':
+            filelist = (
+                '/root/.bash_history'
+                '/home/cloud/.bash_history'
+                '/root/.ssh'
+                '/home/cloud/.ssh')
+            for f in filelist:
+                rmtree(f, ignore_errors=True)
+
+        elif system == 'Windows':
+            # TODO
+            pass
+
+    @staticmethod
+    def start_access_server():
+        if system == 'Linux':
+            subprocess.call(('/sbin/start', 'ssh'))
+
+        elif system == 'Windows':
+            # TODO
+            pass
+
+    @staticmethod
+    def ipaddresses():
+        import netifaces
+        args = {}
+        interfaces = netifaces.interfaces()
+        for i in interfaces:
+            if i == 'lo':
+                continue
+            args[i] = []
+            addresses = netifaces.ifaddresses(i)
+            args[i] = ([x['addr']
+                        for x in addresses.get(netifaces.AF_INET, [])] +
+                       [x['addr']
+                        for x in addresses.get(netifaces.AF_INET6, [])
+                        if '%' not in x['addr']])
+        return args
+
 
 class SerialLineReceiver(SerialLineReceiverBase):
     def connectionMade(self):
