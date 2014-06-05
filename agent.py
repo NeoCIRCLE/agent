@@ -6,12 +6,17 @@ from twisted.internet.task import LoopingCall
 from twisted.internet.serialport import SerialPort
 
 import uptime
+import logging
 import subprocess
 import fileinput
 import platform
+from shutil import rmtree
+# from os import path
 from datetime import datetime
 
 from utils import SerialLineReceiverBase
+
+logger = logging.getLogger()
 
 fstab_template = ('sshfs#%(username)s@%(host)s:home /home/cloud/sshfs '
                   'fuse defaults,idmap=user,reconnect,_netdev,uid=1000,'
@@ -51,16 +56,16 @@ def linux_set_time(time):
 
 class Context(object):
     @staticmethod
-    def change_password(new_password):
+    def change_password(password):
         if system == 'Linux':
             proc = subprocess.Popen(['/usr/sbin/chpasswd'],
                                     stdin=subprocess.PIPE)
-            proc.communicate('cloud:%s\n' % new_password)
+            proc.communicate('cloud:%s\n' % password)
         elif system == 'Windows':
             from win32com import adsi
             ads_obj = adsi.ADsGetObject('WinNT://localhost/%s,user' % 'cloud')
             ads_obj.Getinfo()
-            ads_obj.SetPassword(new_password)
+            ads_obj.SetPassword(password)
 
     @staticmethod
     def restart_networking():
@@ -86,41 +91,41 @@ class Context(object):
             assert nic.EnableDHCP()[0] == 0
 
     @staticmethod
-    def set_time(new_time):
+    def set_time(time):
         if system == 'Linux':
-            linux_set_time(float(new_time))
+            linux_set_time(float(time))
             try:
                 subprocess.call(['/etc/init.d/ntp', 'restart'])
             except:
                 pass
         elif system == 'Windows':
             import win32api
-            t = datetime.utcfromtimestamp(float(new_time))
+            t = datetime.utcfromtimestamp(float(time))
             win32api.SetSystemTime(t.year, t.month, 0, t.day, t.hour,
                                    t.minute, t.second, 0)
 
     @staticmethod
-    def set_hostname(new_hostname):
+    def set_hostname(hostname):
         if system == 'Linux':
             if distro == 'debian':
                 with open('/etc/hostname', 'w') as f:
-                    f.write(new_hostname)
+                    f.write(hostname)
             elif distro == 'rhel':
                 for line in fileinput.input('/etc/sysconfig/network',
                                             inplace=1):
                     if line.startswith('HOSTNAME='):
-                        print 'HOSTNAME=%s' % new_hostname
+                        print 'HOSTNAME=%s' % hostname
                     else:
                         print line.rstrip()
 
             with open('/etc/hosts', 'w') as f:
                 f.write('127.0.0.1 localhost'
-                        '127.0.1.1 %s\n' % new_hostname)
+                        '127.0.1.1 %s\n' % hostname)
 
-            subprocess.call(['/bin/hostname', new_hostname])
+            subprocess.call(['/bin/hostname', hostname])
         elif system == 'Windows':
             import wmi
-            wmi.WMI().Win32_ComputerSystem()[0].Rename(new_hostname)
+            wmi.WMI().Win32_ComputerSystem()[0].Rename(hostname)
 
     @staticmethod
     def mount_store(host, username, password, key):
@@ -224,44 +229,23 @@ class SerialLineReceiver(SerialLineReceiverBase):
         self.send_response(response='status',
                            args=args)
 
-    def send_ipaddresses(self):
-        import netifaces
-        args = {}
-        interfaces = netifaces.interfaces()
-        for i in interfaces:
-            if i == 'lo':
-                continue
-            args[i] = []
-            addresses = netifaces.ifaddresses(i)
-            args[i] = ([x['addr']
-                        for x in addresses.get(netifaces.AF_INET, [])] +
-                       [x['addr']
-                        for x in addresses.get(netifaces.AF_INET6, [])
-                        if '%' not in x['addr']])
-        self.send_response(response='ipaddresses',
-                           args=args)
-
     def handle_command(self, command, args):
-        if command == 'ping':
-            self.send_response(response='pong',
-                               args=args)
-        elif command == 'status':
-            self.send_status()
-        elif command == 'get_ipaddresses':
-            self.send_ipaddresses()
-        elif command == 'change_password':
-            Context.change_password(str(args['password']))
-        elif command == 'restart_networking':
-            Context.restart_networking()
-        elif command == 'set_time':
-            Context.set_time(str(args['time']))
-        elif command == 'set_hostname':
-            Context.set_hostname(str(args['hostname']))
-        elif command == 'mount_store':
-            Context.mount_store(str(args['host']),
-                                str(args['username']),
-                                str(args['password']),
-                                str(args['key']))
+        if not isinstance(command, basestring) or command.startswith('_'):
+            raise Exception(u'Invalid command: %s' % command)
+
+        for k, v in args.iteritems():
+            if not (isinstance(v, int) or isinstance(v, float) or
+                    isinstance(v, basestring)):
+                raise Exception(u'Invalid argument: %s' % k)
+
+        try:
+            func = getattr(Context, command)
+            retval = func(**args)
+        except (AttributeError, TypeError) as e:
+            raise Exception(u'Command not found: %s (%s)' % (command, e))
+        else:
+            if retval:
+                self.send_response(response=func.__name__, args=retval)
 
     def handle_response(self, response, args):
         pass

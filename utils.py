@@ -38,7 +38,10 @@ class SerialLineReceiverBase(LineReceiver, object):
 
         if command is not None and isinstance(command, unicode):
             logging.debug('received command: %s (%s)' % (command, args))
-            self.handle_command(command, args)
+            try:
+                self.handle_command(command, args)
+            except Exception as e:
+                logging.error(u'Unhandled exception: %s' % e)
         elif response is not None and isinstance(response, unicode):
             logging.debug('received reply: %s (%s)' % (response, args))
             self.handle_response(response, args)
