@@ -10,8 +10,11 @@ import logging
 import subprocess
 import fileinput
 import platform
-from shutil import rmtree
-# from os import path
+import sys
+import tarfile
+from StringIO import StringIO
+from base64 import decodestring
+from shutil import rmtree, move
 from datetime import datetime
 
 from utils import SerialLineReceiverBase
@@ -170,6 +173,24 @@ class Context(object):
         elif system == 'Windows':
             # TODO
             pass
+
+    @staticmethod
+    def update(data):
+        cur_dir = sys.path[0]
+        new_dir = cur_dir + '.new'
+        old_dir = cur_dir + '.old'
+        f = StringIO(decodestring(data))
+        try:
+            tar = tarfile.TarFile.open("dummy", fileobj=f, mode='r|bz2')
+            tar.extractall(new_dir)
+        except tarfile.ReadError as e:
+            logger.error(e)
+        else:
+            rmtree(old_dir, ignore_errors=True)
+            move(cur_dir, old_dir)
+            move(new_dir, cur_dir)
+            logger.info('Updated')
+            reactor.stop()
 
     @staticmethod
     def ipaddresses():
