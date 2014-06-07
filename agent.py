@@ -163,12 +163,7 @@ class Context(object):
             for f in filelist:
                 rmtree(f, ignore_errors=True)
 
-            if distro == 'debian':
-                subprocess.call(('/usr/sbin/dpkg-reconfigure',
-                                 'openssh-server'))
-            elif distro == 'rhel':
-                # TODO
-                pass
+            subprocess.call(('/usr/bin/ssh-keygen', '-A'))
 
         elif system == 'Windows':
             # TODO
