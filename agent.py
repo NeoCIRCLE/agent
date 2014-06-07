@@ -12,6 +12,7 @@ import fileinput
 import platform
 import sys
 import tarfile
+from glob import glob
 from StringIO import StringIO
 from base64 import decodestring
 from shutil import rmtree, move
@@ -153,13 +154,21 @@ class Context(object):
     @staticmethod
     def cleanup():
         if system == 'Linux':
-            filelist = (
+            filelist = ((
                 '/root/.bash_history'
                 '/home/cloud/.bash_history'
                 '/root/.ssh'
                 '/home/cloud/.ssh')
+                + glob('/etc/ssh/ssh_host_*'))
             for f in filelist:
                 rmtree(f, ignore_errors=True)
+
+            if distro == 'debian':
+                subprocess.call(('/usr/sbin/dpkg-reconfigure',
+                                 'openssh-server'))
+            elif distro == 'rhel':
+                # TODO
+                pass
 
         elif system == 'Windows':
             # TODO
