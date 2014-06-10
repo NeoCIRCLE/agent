@@ -269,8 +269,9 @@ class SerialLineReceiver(SerialLineReceiverBase):
         except (AttributeError, TypeError) as e:
             raise Exception(u'Command not found: %s (%s)' % (command, e))
         else:
-            if retval:
-                self.send_response(response=func.__name__, args=retval)
+            self.send_response(
+                response=func.__name__,
+                args={'retval': retval, 'uuid': args.get('uuid', None)})
 
     def handle_response(self, response, args):
         pass
