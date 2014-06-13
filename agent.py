@@ -154,11 +154,11 @@ class Context(object):
     @staticmethod
     def cleanup():
         if system == 'Linux':
-            filelist = ((
+            filelist = ([
                 '/root/.bash_history'
                 '/home/cloud/.bash_history'
                 '/root/.ssh'
-                '/home/cloud/.ssh')
+                '/home/cloud/.ssh']
                 + glob('/etc/ssh/ssh_host_*'))
             for f in filelist:
                 rmtree(f, ignore_errors=True)
@@ -179,13 +179,13 @@ class Context(object):
             pass
 
     @staticmethod
-    def update(data):
+    def update(data, uuid):
         cur_dir = sys.path[0]
         new_dir = cur_dir + '.new'
         old_dir = cur_dir + '.old'
         f = StringIO(decodestring(data))
         try:
-            tar = tarfile.TarFile.open("dummy", fileobj=f, mode='r|bz2')
+            tar = tarfile.TarFile.open("dummy", fileobj=f, mode='r|gz')
             tar.extractall(new_dir)
         except tarfile.ReadError as e:
             logger.error(e)
@@ -213,11 +213,20 @@ class Context(object):
                         if '%' not in x['addr']])
         return args
 
+    @staticmethod
+    def get_agent_version():
+        try:
+            with open('version.txt') as f:
+                return f.readline()
+        except IOError:
+            return None
+
 
 class SerialLineReceiver(SerialLineReceiverBase):
     def connectionMade(self):
-        self.send_command(command='agent_started',
-                          args={})
+        self.send_command(
+            command='agent_started',
+            args={'version': Context.get_agent_version()})
 
         def shutdown():
             self.connectionLost2('shutdown')
@@ -239,9 +248,7 @@ class SerialLineReceiver(SerialLineReceiverBase):
         self.lc.start(5, now=False)
 
     def send_status(self):
-        import psutil  # TODO ez azért kell itt van importálva, mert
-                       # windows alatt kilépéskor kressel tőle a python
-                       # így a service azt hiszi, hogy nem indult el rendesen
+        import psutil
         disk_usage = {(disk.device.replace('/', '_')):
                       psutil.disk_usage(disk.mountpoint).percent
                       for disk in psutil.disk_partitions()}
