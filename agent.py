@@ -12,6 +12,8 @@ import fileinput
 import platform
 import sys
 import tarfile
+from os.path import expanduser, join
+from os import mkdir
 from glob import glob
 from StringIO import StringIO
 from base64 import decodestring
@@ -20,7 +22,13 @@ from datetime import datetime
 
 from utils import SerialLineReceiverBase
 
+from ssh import PubKey
+
+
 logger = logging.getLogger()
+
+SSH_DIR = expanduser('~cloud/.ssh')
+AUTHORIZED_KEYS = join(SSH_DIR, 'authorized_keys')
 
 fstab_template = ('sshfs#%(username)s@%(host)s:home /home/cloud/sshfs '
                   'fuse defaults,idmap=user,reconnect,_netdev,uid=1000,'
@@ -150,6 +158,59 @@ class Context(object):
             with open(r'c:\Windows\System32\Repl\Import\Scripts'
                       r'%s.bat' % username, 'w') as f:
                 f.write(data)
+
+    @staticmethod
+    def get_keys():
+        retval = []
+        try:
+            with open(AUTHORIZED_KEYS, 'r') as f:
+                for line in f.readlines():
+                    try:
+                        retval.append(PubKey.from_str(line))
+                    except:
+                        logger.exception(u'Invalid ssh key: ')
+        except IOError:
+            pass
+        return retval
+
+    @staticmethod
+    def _save_keys(keys):
+        print keys
+        try:
+            mkdir(SSH_DIR)
+        except OSError:
+            pass
+        with open(AUTHORIZED_KEYS, 'w') as f:
+            for key in keys:
+                f.write(unicode(key) + '\n')
+
+    @staticmethod
+    def add_keys(keys):
+        if system == 'Linux':
+            new_keys = Context.get_keys()
+            for key in keys:
+                try:
+                    p = PubKey.from_str(key)
+                    if p not in new_keys:
+                        new_keys.append(p)
+                except:
+                    logger.exception(u'Invalid ssh key: ')
+            Context._save_keys(new_keys)
+
+    @staticmethod
+    def del_keys(keys):
+        if system == 'Linux':
+            new_keys = Context.get_keys()
+            for key in keys:
+                try:
+                    p = PubKey.from_str(key)
+                    try:
+                        new_keys.remove(p)
+                    except ValueError:
+                        pass
+                except:
+                    logger.exception(u'Invalid ssh key: ')
+            Context._save_keys(new_keys)
 
     @staticmethod
     def cleanup():
