@@ -285,7 +285,7 @@ class Context(object):
     @staticmethod
     def send_notification(msg):
         import notify
-        notify.notify(url)
+        notify.notify(msg)
 
 class SerialLineReceiver(SerialLineReceiverBase):
     def connectionMade(self):
