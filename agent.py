@@ -282,6 +282,10 @@ class Context(object):
         except IOError:
             return None
 
+    @staticmethod
+    def notification_of_suspension(url):
+        import notify
+        notify.notify(url)
 
 class SerialLineReceiver(SerialLineReceiverBase):
     def connectionMade(self):
