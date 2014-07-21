@@ -38,11 +38,12 @@ def wall(text):
     if text is None:
         logger.error("Incorrect function call")
     else:
-        subprocess.call("echo %s | wall" % text, shell=True)
+        process = subprocess.Popen("wall", stdin=subprocess.PIPE, shell=True)
+        process.communicate(input=text)[0]
 
 
 def accept():
-    import httplibs
+    import httplib
     if not os.path.isfile("%s/%s" % (get_temp_dir(), file_name)):
         logger.error("There isn't a request received currently")
     else:
