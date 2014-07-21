@@ -283,7 +283,7 @@ class Context(object):
             return None
 
     @staticmethod
-    def notification_of_suspension(url):
+    def send_notification(msg):
         import notify
         notify.notify(url)
 
