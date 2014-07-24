@@ -98,7 +98,7 @@ def notify(url):
         os.environ["DISPLAY"] = olddisplay
 
 
-def file_already_exists(name):
+def file_already_exists(name, mode=0644):
     """Return whether file already exists, create it if not.
 
     Other errors are silently ignored as the file will be reopened anyways.
@@ -106,12 +106,12 @@ def file_already_exists(name):
     """
 
     try:
-        fd = os_open(name, O_CREAT | O_EXCL)
+        fd = os.open(name, os.O_CREAT | os.O_EXCL, mode)
     except OSError as e:
-        if e.errno == EEXIST:
+        if e.errno == os.EEXIST:
             return True
     else:
-        close(fd)
+        os.close(fd)
     return False
 
 
@@ -136,7 +136,6 @@ def search_display():
             if "DISPLAY" in envs and ":" in envs["DISPLAY"]:
                 return envs["DISPLAY"]
     return None
-
 
 
 
