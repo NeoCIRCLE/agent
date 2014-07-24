@@ -284,9 +284,9 @@ class Context(object):
             return None
 
     @staticmethod
-    def send_notification(msg):
+    def send_expiration(url):
         import notify
-        notify.notify(msg)
+        notify.notify(url)
 
 
 class SerialLineReceiver(SerialLineReceiverBase):
