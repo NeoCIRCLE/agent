@@ -46,32 +46,29 @@ def wall(text):
 
 
 def accept():
-    import urllib2
-    if not os.path.isfile("%s/%s" % (get_temp_dir(), file_name)):
-        logger.error("There isn't a request received currently")
-    else:
-        done = False
-        # Load the saved url
-        url = pickle.load(open("%s/%s" % (get_temp_dir(), file_name), "rb"))
-        # Fake data to post so we make urllib2 send a POST instead of a GET
-        # do POST request to
-        req = urllib2.Request(url, "")
-        rsp = urllib2.urlopen(req)
+    file_path = os.path.join(get_temp_dir(), file_name)
+    if not os.path.isfile(file_path):
+        print "There is no recent notification to accept."
+        return False
 
-        # Get the result of the request
-        success = rsp.info()['renewal']
-        if success is not None or rsp.getcode() == 200:
-            logger.info("Successfull renew, 200 - OK")
-            done = True
-        elif rsp.getcode() == 302:
-            logger.info("Response is 302 - FOUND")
-            done = True
-        else:
-            logger.error("Renewal failed please try it manually at %s" % url)
-        # POST request was sent and received successfully
-        if done:
-            print "Successfull renewal of this vm!"
-            os.remove("%s/%s" % (get_temp_dir(), file_name))
+    # Load the saved url
+    url = json.load(open(file_path, "r"))
+    # Fake data to post so we make urllib2 send a POST instead of a GET
+    # do POST request to
+    req = urllib2.Request(url, "", {"http_accept": "application/json"})
+
+    try:
+        rsp = urllib2.urlopen(req)
+        data = json.load(rsp)
+        newtime = data["new_suspend_time"]
+    except:
+        print "Renewal failed. Please try it manually at %s" % url
+        logger.exception("renew failed")
+        return False
+    else:
+        print "Renew succeeded. The machine will be suspended at %s." % newtime
+        os.remove(file_path)
+        return True
 
 
 def notify(url):
