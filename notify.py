@@ -64,7 +64,7 @@ def accept():
             logger.error("Renewal failed please try it manually at %s" % url)
         # POST request was sent and received successfully
         if done:
-            wall("Successfull renewal of this vm!")
+            print "Successfull renewal of this vm!"
             os.remove("%s/%s" % (get_temp_dir(), file_name))
 
 def notify(url):

@@ -6,4 +6,4 @@ if __name__ == '__main__':
     try:
         notify.accept()
     except:
-        notify.wall("There was an unknown error while trying to renew this vm, please do it manually!")
+        print "There was an unknown error while trying to renew this vm, please do it manually!"
