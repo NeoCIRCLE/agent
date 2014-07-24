@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 ##
@@ -6,10 +6,7 @@
 ##
 
 import platform, logging, os, subprocess, webbrowser, sys
-if sys.hexversion < 0x03000000 and sys.hexversion > 0x02000000:
-    import cPickle as pickle
-else:
-    import pickle
+import cPickle as pickle
 
 system = platform.system()
 logger = logging.getLogger()
@@ -43,32 +40,24 @@ def wall(text):
 
 
 def accept():
-    import httplib
+    import urllib2, urllib
     if not os.path.isfile("%s/%s" % (get_temp_dir(), file_name)):
         logger.error("There isn't a request received currently")
     else:
         done = False
         # Load the saved url
         url = pickle.load(open("%s/%s" % (get_temp_dir(), file_name), "rb"))
-        headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
-        # Delete https:// or http:// from beginning
-        if url[:4].lower() == 'http':
-            url = url[url.find("/")+2:]
-        # Try to connect to the specified URL
-        conn = httplib.HTTPConnection(url[:url.find("/")])
-        logger.info("Connection requested to %s" % url[:url.find("/")])
-        # Create the POST http request
-        conn.request("POST", url[url.find("/"):], "", headers)
-        logger.info("Post reques sent to %s" % url)
+        # Fake data to post so we make urllib2 send a POST instead of a GET
+        # do POST request to 
+        req = urllib2.Request(url, "")
+        rsp = urllib2.urlopen(req) 
+        
         # Get the result of the request
-        response = conn.getresponse()
-        success = response.getheader('renewal')
-        if success is None:
-            success = ''
-        if success.lower() == 'success' or response.status == httplib.OK:
+        success = rsp.info()['renewal']
+        if success is not None or rsp.getcode() == 200:
             logger.info("Successfull renew, 200 - OK")
             done = True
-        elif response.status == httplib.FOUND:
+        elif rsp.getcode() == 302:
             logger.info("Response is 302 - FOUND")
             done = True
         else:
