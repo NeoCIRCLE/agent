@@ -75,6 +75,10 @@ def notify(url):
     olddisplay = os.environ.get("DISPLAY")
     try:
         file_path = os.path.join(get_temp_dir(), file_name)
+        if file_already_exists(file_path):
+            os.remove(file_path)
+            if file_already_exists(file_path):
+                raise Exception("Couldn't create file %s as new" % file_path)
         with open(file_path, "w") as f:
             json.dump(url, f)
 
@@ -92,6 +96,23 @@ def notify(url):
         webbrowser.open(url, new=2, autoraise=True)
     finally:
         os.environ["DISPLAY"] = olddisplay
+
+
+def file_already_exists(name):
+    """Return whether file already exists, create it if not.
+
+    Other errors are silently ignored as the file will be reopened anyways.
+    Creating it is needed to avoid race condition.
+    """
+
+    try:
+        fd = os_open(name, O_CREAT | O_EXCL)
+    except OSError as e:
+        if e.errno == EEXIST:
+            return True
+    else:
+        close(fd)
+    return False
 
 
 def search_display():
