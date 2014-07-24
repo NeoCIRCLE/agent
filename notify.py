@@ -40,7 +40,7 @@ def wall(text):
 
 
 def accept():
-    import urllib2, urllib
+    import urllib2
     if not os.path.isfile("%s/%s" % (get_temp_dir(), file_name)):
         logger.error("There isn't a request received currently")
     else:
