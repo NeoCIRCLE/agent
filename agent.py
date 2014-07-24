@@ -67,6 +67,7 @@ def linux_set_time(time):
 
 
 class Context(object):
+
     @staticmethod
     def change_password(password):
         if system == 'Linux':
@@ -287,7 +288,9 @@ class Context(object):
         import notify
         notify.notify(msg)
 
+
 class SerialLineReceiver(SerialLineReceiverBase):
+
     def connectionMade(self):
         self.send_command(
             command='agent_started',
