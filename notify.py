@@ -14,7 +14,7 @@ import urllib2
 import webbrowser
 
 logger = logging.getLogger()
-file_name = "vm_renewal.p"
+file_name = "vm_renewal.json"
 
 
 def parse_arguments():
@@ -72,17 +72,51 @@ def accept():
 
 
 def notify(url):
-    if os.getenv("DISPLAY") and platform.system() in ('Linux', 'Windows'):
+    olddisplay = os.environ.get("DISPLAY")
+    try:
+        file_path = os.path.join(get_temp_dir(), file_name)
+        with open(file_path, "w") as f:
+            json.dump(url, f)
+
+        if platform.system() != "Windows":
+            display = search_display()
+            if display:
+                os.environ['DISPLAY'] = display
+
+            wall("This virtual machine is going to expire! Please type \n"
+                 "  vm_renewal\n"
+                 "command to keep it running.")
+        else:
+            display = True
+
         webbrowser.open(url, new=2, autoraise=True)
-    elif not os.getenv("DISPLAY"):
-        if os.path.isfile("%s/%s" % (get_temp_dir(), file_name)):
-            logger.info("There is on old request already saved")
-        json.dump(url, open("%s/%s" % (get_temp_dir(), file_name), "wb"))
-        wall("This virtual machine is going to expire! Please type \n"
-             "  vm_renewal\n"
-             "command to keep it running.")
-    else:
-        raise Exception('Not supported system type')
+    finally:
+        os.environ["DISPLAY"] = olddisplay
+
+
+def search_display():
+    """Search a valid DISPLAY env var in processes
+    """
+    env = os.getenv("DISPLAY")
+    if env:
+        return env
+
+    for pid in os.listdir("/proc"):
+        if not pid.isdigit():
+            continue
+        env = os.path.join("/proc", pid, "environ")
+        try:
+            with open(env, "r") as f:
+                envs = dict(line.split("=", 1)
+                            for line in f.read().split("\0") if "=" in line)
+        except:
+            continue
+        else:
+            if "DISPLAY" in envs and ":" in envs["DISPLAY"]:
+                return envs["DISPLAY"]
+    return None
+
+
 
 
 def main():
