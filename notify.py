@@ -2,22 +2,22 @@
 # -*- coding: utf-8 -*-
 
 ##
-# Test program that informs the user about vm incoming time out
+# Notify user about vm expiring
 ##
 
-import platform
+import json
 import logging
 import os
+import platform
 import subprocess
+import urllib2
 import webbrowser
-import cPickle as pickle
 
-system = platform.system()
 logger = logging.getLogger()
 file_name = "vm_renewal.p"
 
 
-def pars_arguments():
+def parse_arguments():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("-u", "--url", type=str, required=True)
@@ -75,12 +75,12 @@ def accept():
 
 
 def notify(url):
-    if os.getenv("DISPLAY") and system == 'Linux' or system == 'Windows':
+    if os.getenv("DISPLAY") and platform.system() in ('Linux', 'Windows'):
         webbrowser.open(url, new=2, autoraise=True)
     elif not os.getenv("DISPLAY"):
         if os.path.isfile("%s/%s" % (get_temp_dir(), file_name)):
             logger.info("There is on old request already saved")
-        pickle.dump(url, open("%s/%s" % (get_temp_dir(), file_name), "wb"))
+        json.dump(url, open("%s/%s" % (get_temp_dir(), file_name), "wb"))
         wall("This virtual machine is going to expire! Please type \n"
              "  vm_renewal\n"
              "command to keep it running.")
@@ -89,7 +89,7 @@ def notify(url):
 
 
 def main():
-    args = pars_arguments()
+    args = parse_arguments()
     notify(args.url)
 
 if __name__ == '__main__':
