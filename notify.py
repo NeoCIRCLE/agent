@@ -104,7 +104,11 @@ def notify(url):
         if display:
             webbrowser.open(url, new=2, autoraise=True)
     finally:
-        os.environ["DISPLAY"] = olddisplay
+        if olddisplay:
+            os.environ["DISPLAY"] = olddisplay
+        elif 'DISPLAY' in os.environ:
+            del os.environ["DISPLAY"]
+
 
 
 def file_already_exists(name, mode=0644):
