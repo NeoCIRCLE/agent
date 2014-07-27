@@ -101,7 +101,8 @@ def notify(url):
         else:
             display = True
 
-        webbrowser.open(url, new=2, autoraise=True)
+        if display:
+            webbrowser.open(url, new=2, autoraise=True)
     finally:
         os.environ["DISPLAY"] = olddisplay
 
@@ -116,7 +117,7 @@ def file_already_exists(name, mode=0644):
     try:
         fd = os.open(name, os.O_CREAT | os.O_EXCL, mode)
     except OSError as e:
-        if e.errno == os.EEXIST:
+        if e.errno == errno.EEXIST:
             return True
     else:
         os.close(fd)
