@@ -5,6 +5,8 @@
 # Notify user about vm expiring
 ##
 
+import cookielib
+import errno
 import json
 import logging
 import os
@@ -53,12 +55,18 @@ def accept():
 
     # Load the saved url
     url = json.load(open(file_path, "r"))
-    # Fake data to post so we make urllib2 send a POST instead of a GET
-    # do POST request to
-    req = urllib2.Request(url, "", {"http_accept": "application/json"})
+    cj = cookielib.CookieJar()
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
 
     try:
-        rsp = urllib2.urlopen(req)
+        opener.open(url)  # GET to collect cookies
+        cookies = cj._cookies_for_request(urllib2.Request(url))
+        token = [c for c in cookies if c.name == "csrftoken"][0].value
+        req = urllib2.Request(url, "", {
+            "accept": "application/json", "referer": url,
+            "x-csrftoken": token})
+            # "content-type": "application/x-www-form-urlencoded"})
+        rsp = opener.open(req)
         data = json.load(rsp)
         newtime = data["new_suspend_time"]
     except:
