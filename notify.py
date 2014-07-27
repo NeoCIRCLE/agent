@@ -9,11 +9,11 @@ import cookielib
 import errno
 import json
 import logging
+import multiprocessing
 import os
 import platform
 import subprocess
 import urllib2
-import webbrowser
 
 logger = logging.getLogger()
 file_name = "vm_renewal.json"
@@ -40,6 +40,8 @@ def get_temp_dir():
 
 
 def wall(text):
+    if platform.system() == "Windows":
+        return
     if text is None:
         logger.error("Incorrect function call")
     else:
@@ -80,35 +82,35 @@ def accept():
 
 
 def notify(url):
-    olddisplay = os.environ.get("DISPLAY")
-    try:
-        file_path = os.path.join(get_temp_dir(), file_name)
+    file_path = os.path.join(get_temp_dir(), file_name)
+    if file_already_exists(file_path):
+        os.remove(file_path)
         if file_already_exists(file_path):
-            os.remove(file_path)
-            if file_already_exists(file_path):
-                raise Exception("Couldn't create file %s as new" % file_path)
-        with open(file_path, "w") as f:
-            json.dump(url, f)
+            raise Exception("Couldn't create file %s as new" % file_path)
+    with open(file_path, "w") as f:
+        json.dump(url, f)
+    wall("This virtual machine is going to expire! Please type \n"
+         "  vm_renewal\n"
+         "command to keep it running.")
+    p = multiprocessing.Process(target=open_in_browser, args=(url, ))
+    p.start()
 
-        if platform.system() != "Windows":
-            display = search_display()
-            if display:
-                os.environ['DISPLAY'] = display
 
-            wall("This virtual machine is going to expire! Please type \n"
-                 "  vm_renewal\n"
-                 "command to keep it running.")
-        else:
-            display = True
-
+def open_in_browser(url):
+    if platform.system() != "Windows":
+        display = search_display()
         if display:
-            webbrowser.open(url, new=2, autoraise=True)
-    finally:
-        if olddisplay:
-            os.environ["DISPLAY"] = olddisplay
-        elif 'DISPLAY' in os.environ:
-            del os.environ["DISPLAY"]
+            display, uid, gid = display
+            os.setgid(gid)
+            os.setuid(uid)
+            os.environ['DISPLAY'] = display
+            logger.debug("DISPLAY=%s", display)
+    else:
+        display = True
 
+    if display:
+        import webbrowser
+        webbrowser.open(url, new=2, autoraise=True)
 
 
 def file_already_exists(name, mode=0644):
@@ -143,13 +145,12 @@ def search_display():
             with open(env, "r") as f:
                 envs = dict(line.split("=", 1)
                             for line in f.read().split("\0") if "=" in line)
+            if "DISPLAY" in envs and ":" in envs["DISPLAY"]:
+                p = os.stat(os.path.join("/proc", pid))
+                return envs["DISPLAY"], p.st_uid, p.st_gid
         except:
             continue
-        else:
-            if "DISPLAY" in envs and ":" in envs["DISPLAY"]:
-                return envs["DISPLAY"]
     return None
-
 
 
 def main():
