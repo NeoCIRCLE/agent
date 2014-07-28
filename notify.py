@@ -16,7 +16,9 @@ import subprocess
 import urllib2
 
 logger = logging.getLogger()
+logger.debug("notify imported")
 file_name = "vm_renewal.json"
+win = platform.system() == "Windows"
 
 
 def parse_arguments():
@@ -40,7 +42,7 @@ def get_temp_dir():
 
 
 def wall(text):
-    if platform.system() == "Windows":
+    if win:
         return
     if text is None:
         logger.error("Incorrect function call")
@@ -67,7 +69,6 @@ def accept():
         req = urllib2.Request(url, "", {
             "accept": "application/json", "referer": url,
             "x-csrftoken": token})
-            # "content-type": "application/x-www-form-urlencoded"})
         rsp = opener.open(req)
         data = json.load(rsp)
         newtime = data["new_suspend_time"]
@@ -82,22 +83,35 @@ def accept():
 
 
 def notify(url):
-    file_path = os.path.join(get_temp_dir(), file_name)
-    if file_already_exists(file_path):
-        os.remove(file_path)
-        if file_already_exists(file_path):
-            raise Exception("Couldn't create file %s as new" % file_path)
-    with open(file_path, "w") as f:
-        json.dump(url, f)
-    wall("This virtual machine is going to expire! Please type \n"
-         "  vm_renewal\n"
-         "command to keep it running.")
-    p = multiprocessing.Process(target=open_in_browser, args=(url, ))
-    p.start()
+    try:
+        logger.debug("notify(%s) called", url)
+        if win:
+            logger.info("notifying %d clients", len(clients))
+            for c in clients:
+                logger.debug("sending url %s to client %s", url, unicode(c))
+                c.sendLine(url.encode())
+        else:
+            file_path = os.path.join(get_temp_dir(), file_name)
+            if file_already_exists(file_path):
+                os.remove(file_path)
+                if file_already_exists(file_path):
+                    raise Exception(
+                        "Couldn't create file %s as new" %
+                        file_path)
+            with open(file_path, "w") as f:
+                json.dump(url, f)
+            wall("This virtual machine is going to expire! Please type \n"
+                 "  vm_renewal\n"
+                 "command to keep it running.")
+            logger.debug("wall sent, trying to start browser")
+            p = multiprocessing.Process(target=open_in_browser, args=(url, ))
+            p.start()
+    except:
+        logger.exception("Couldn't notify about %s" % url)
 
 
 def open_in_browser(url):
-    if platform.system() != "Windows":
+    if not win:
         display = search_display()
         if display:
             display, uid, gid = display
@@ -113,7 +127,7 @@ def open_in_browser(url):
         webbrowser.open(url, new=2, autoraise=True)
 
 
-def file_already_exists(name, mode=0644):
+def file_already_exists(name, mode=0o644):
     """Return whether file already exists, create it if not.
 
     Other errors are silently ignored as the file will be reopened anyways.
@@ -151,6 +165,59 @@ def search_display():
         except:
             continue
     return None
+
+if win:
+    from twisted.internet import protocol
+    from twisted.protocols import basic
+
+    clients = set()
+    port = 25683
+
+    class PubProtocol(basic.LineReceiver):
+
+        def __init__(self, factory):
+            self.factory = factory
+
+        def connectionMade(self):
+            logger.info("client connected: %s", unicode(self))
+            clients.add(self)
+
+        def connectionLost(self, reason):
+            logger.info("client disconnected: %s", unicode(self))
+            clients.remove(self)
+
+    class PubFactory(protocol.Factory):
+
+        def __init__(self):
+            clients.clear()
+
+        def buildProtocol(self, addr):
+            return PubProtocol(self)
+
+    def register_publisher(reactor):
+        reactor.listenTCP(port, PubFactory(), interface='localhost')
+
+    class SubProtocol(basic.LineReceiver):
+
+        def lineReceived(self, line):
+            print "received", line
+            open_in_browser(line)
+
+    class SubFactory(protocol.ReconnectingClientFactory):
+
+        def buildProtocol(self, addr):
+            return SubProtocol()
+
+    def run_client():
+        from twisted.internet import reactor
+        print "connect to localhost:%d" % port
+        reactor.connectTCP("localhost", port, SubFactory())
+        reactor.run()
+
+else:
+
+    def register_publisher(reactor):
+        pass
 
 
 def main():
