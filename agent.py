@@ -12,7 +12,7 @@ import fileinput
 import platform
 import sys
 import tarfile
-from os.path import expanduser, join
+from os.path import expanduser, join, exists
 from os import mkdir
 from glob import glob
 from StringIO import StringIO
@@ -30,10 +30,17 @@ logger = logging.getLogger()
 SSH_DIR = expanduser('~cloud/.ssh')
 AUTHORIZED_KEYS = join(SSH_DIR, 'authorized_keys')
 
-fstab_template = ('sshfs#%(username)s@%(host)s:home /home/cloud/sshfs '
-                  'fuse defaults,idmap=user,reconnect,_netdev,uid=1000,'
-                  'gid=1000,allow_other,StrictHostKeyChecking=no,'
-                  'IdentityFile=/home/cloud/.ssh/id_rsa 0 0\n')
+STORE_DIR = '/store'
+
+mount_template_linux = (
+    '//%(host)s/u-1 %(dir)s cifs username=%(username)s'
+    ',password=%(password)s,iocharset=utf8,uid=cloud  0  0\n')
+
+mount_template_windows = (
+    'net use * /delete /yes\r\n'
+    'timeout 5\r\n'
+    'net use z: \\%(host)s\\%(username)s "%(password)s" '
+    '/user:%(username)s\r\n')
 
 
 system = platform.system()
@@ -141,24 +148,26 @@ class Context(object):
             wmi.WMI().Win32_ComputerSystem()[0].Rename(hostname)
 
     @staticmethod
-    def mount_store(host, username, password, key):
+    def mount_store(host, username, password):
+        data = {'host': host, 'username': username, 'password': password}
         if system == 'Linux':
-            for line in fileinput.input('/etc/fstab', inplace=1):
-                if line.startswith('sshfs#'):
-                    line = ''
+            data['dir'] = STORE_DIR
+            if not exists(STORE_DIR):
+                mkdir(STORE_DIR)
+            # TODO
+            for line in fileinput.input('/etc/fstab', inplace=True):
+                if not (line.startswith('//') and ' cifs ' in line):
+                    print line.rstrip()
 
             with open('/etc/fstab', 'a') as f:
-                f.write(fstab_template % {'host': host, 'username': username,
-                                          'password': password})
+                f.write(mount_template_linux % data)
+
+            subprocess.call('mount -a', shell=True)
 
         elif system == 'Windows':
-            data = ('net use * /delete /yes\r\n'
-                    'timeout 5\r\n'
-                    'net use z: \\%(hostname)s\\%(username)s "%(password)s" '
-                    '/user:%(username)s')
-            with open(r'c:\Windows\System32\Repl\Import\Scripts'
-                      r'%s.bat' % username, 'w') as f:
-                f.write(data)
+            with open(r'c:\Windows\System32\Repl\Import\Scripts\%s.bat'
+                      % username, 'w') as f:
+                f.write(mount_template_windows % data)
 
     @staticmethod
     def get_keys():
