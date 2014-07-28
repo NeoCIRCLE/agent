@@ -358,8 +358,13 @@ def main():
     else:
         port = '/dev/ttyS0'
     SerialPort(SerialLineReceiver(), port, reactor, baudrate=115200)
-
+    try:
+        from notify import register_publisher
+        register_publisher(reactor)
+    except:
+        logger.exception("Couldnt register notify publisher")
     reactor.run()
+
 
 if __name__ == '__main__':
     main()
