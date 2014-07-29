@@ -67,6 +67,7 @@ def linux_set_time(time):
 
 
 class Context(object):
+
     @staticmethod
     def change_password(password):
         if system == 'Linux':
@@ -282,8 +283,14 @@ class Context(object):
         except IOError:
             return None
 
+    @staticmethod
+    def send_expiration(url):
+        import notify
+        notify.notify(url)
+
 
 class SerialLineReceiver(SerialLineReceiverBase):
+
     def connectionMade(self):
         self.send_command(
             command='agent_started',
@@ -351,8 +358,13 @@ def main():
     else:
         port = '/dev/ttyS0'
     SerialPort(SerialLineReceiver(), port, reactor, baudrate=115200)
-
+    try:
+        from notify import register_publisher
+        register_publisher(reactor)
+    except:
+        logger.exception("Couldnt register notify publisher")
     reactor.run()
+
 
 if __name__ == '__main__':
     main()
