@@ -1,0 +1,12 @@
+# /etc/systemd/system/agent.service
+[Unit]
+Description=CIRCLE agent
+Before=network.target
+
+[Service]
+ExecStart=/bin/bash -c "cd /root/agent; . /root/.virtualenvs/agent/bin/activate; python agent.py"
+Restart=always
+
+
+[Install]
+WantedBy=multi-user.target
