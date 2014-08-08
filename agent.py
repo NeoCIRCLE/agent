@@ -46,6 +46,7 @@ mount_template_windows = (
 system = platform.system()
 distros = {'Scientific Linux': 'rhel',
            'CentOS': 'rhel',
+           'CentOS Linux': 'rhel',
            'Debian': 'debian',
            'Ubuntu': 'debian'}
 if system == 'Linux':
@@ -243,7 +244,10 @@ class Context(object):
     @staticmethod
     def start_access_server():
         if system == 'Linux':
-            subprocess.call(('/sbin/start', 'ssh'))
+            try:
+                subprocess.call(('/sbin/start', 'ssh'))
+            except OSError:
+                subprocess.call(('/bin/systemctl', 'start', 'sshd.service'))
 
         elif system == 'Windows':
             # TODO
@@ -329,9 +333,9 @@ class SerialLineReceiver(SerialLineReceiverBase):
         disk_usage = {(disk.device.replace('/', '_')):
                       psutil.disk_usage(disk.mountpoint).percent
                       for disk in psutil.disk_partitions()}
-        args = {"cpu": dict(psutil.cpu_times().__dict__),
-                "ram": dict(psutil.virtual_memory().__dict__),
-                "swap": dict(psutil.swap_memory().__dict__),
+        args = {"cpu": dict(psutil.cpu_times()._asdict()),
+                "ram": dict(psutil.virtual_memory()._asdict()),
+                "swap": dict(psutil.swap_memory()._asdict()),
                 "uptime": {"seconds": uptime.uptime()},
                 "disk": disk_usage,
                 "user": {"count": len(psutil.get_users())}}
