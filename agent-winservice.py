@@ -45,5 +45,26 @@ class AppServerSvc (win32serviceutil.ServiceFramework):
         agent_main()
 
 
+def main():
+    if len(sys.argv) == 1:
+        # service must be starting...
+        # for the sake of debugging etc, we use win32traceutil to see
+        # any unhandled exceptions and print statements.
+        import win32traceutil  # noqa
+        logger.info("service is starting...")
+
+        servicemanager.Initialize()
+        servicemanager.PrepareToHostSingle(AppServerSvc)
+        # Now ask the service manager to fire things up for us...
+        servicemanager.StartServiceCtrlDispatcher()
+        logger.info("service done!")
+    else:
+        win32serviceutil.HandleCommandLine(AppServerSvc)
+
 if __name__ == '__main__':
-    win32serviceutil.HandleCommandLine(AppServerSvc)
+    try:
+        main()
+    except (SystemExit, KeyboardInterrupt):
+        raise
+    except:
+        logger.exception("Exception:")
