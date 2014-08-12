@@ -13,7 +13,7 @@ import platform
 import sys
 import tarfile
 from os.path import expanduser, join, exists
-from os import mkdir
+from os import mkdir, environ
 from glob import glob
 from StringIO import StringIO
 from base64 import decodestring
@@ -25,7 +25,11 @@ from utils import SerialLineReceiverBase
 from ssh import PubKey
 
 
+logging.basicConfig()
 logger = logging.getLogger()
+level = environ.get('LOGLEVEL', 'INFO')
+logger.setLevel(level)
+
 
 SSH_DIR = expanduser('~cloud/.ssh')
 AUTHORIZED_KEYS = join(SSH_DIR, 'authorized_keys')

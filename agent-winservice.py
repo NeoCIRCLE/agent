@@ -1,7 +1,9 @@
 import logging
+from logging.handlers import NTEventLogHandler
 import os
 import servicemanager
 import socket
+import sys
 import win32event
 import win32service
 import win32serviceutil
@@ -9,12 +11,14 @@ import win32serviceutil
 from agent import main as agent_main, reactor
 
 logger = logging.getLogger()
-fh = logging.FileHandler(
-    os.path.join(os.path.dirname(__file__), "agent-service.log"))
+fh = NTEventLogHandler(
+    "CIRCLE Agent", dllname=os.path.dirname(__file__))
 formatter = logging.Formatter(
     "%(asctime)s - %(name)s [%(levelname)s] %(message)s")
 fh.setFormatter(formatter)
 logger.addHandler(fh)
+level = os.environ.get('LOGLEVEL', 'INFO')
+logger.setLevel(level)
 logger.info("%s loaded", __file__)
 
 
