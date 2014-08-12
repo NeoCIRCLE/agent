@@ -367,6 +367,8 @@ class SerialLineReceiver(SerialLineReceiverBase):
 
 def main():
     if system == 'Windows':
+        import pythoncom
+        pythoncom.CoInitialize()
         port = r'\\.\COM1'
     else:
         port = '/dev/ttyS0'
