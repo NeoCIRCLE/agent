@@ -144,8 +144,8 @@ class Context(object):
                         print line.rstrip()
 
             with open('/etc/hosts', 'w') as f:
-                f.write('127.0.0.1 localhost'
-                        '127.0.1.1 %s\n' % hostname)
+                f.write("127.0.0.1 localhost\n"
+                        "127.0.1.1 %s\n" % hostname)
 
             subprocess.call(['/bin/hostname', hostname])
         elif system == 'Windows':
