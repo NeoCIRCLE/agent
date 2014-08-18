@@ -15,10 +15,12 @@ import tarfile
 from os.path import expanduser, join, exists
 from os import mkdir, environ
 from glob import glob
+from inspect import getargspec
 from StringIO import StringIO
 from base64 import decodestring
 from shutil import rmtree, move
 from datetime import datetime
+from types import FunctionType
 
 from utils import SerialLineReceiverBase
 
@@ -346,24 +348,44 @@ class SerialLineReceiver(SerialLineReceiverBase):
         self.send_response(response='status',
                            args=args)
 
-    def handle_command(self, command, args):
+    def _get_command(self, command, args):
         if not isinstance(command, basestring) or command.startswith('_'):
-            raise Exception(u'Invalid command: %s' % command)
-
-        for k, v in args.iteritems():
-            if not (isinstance(v, int) or isinstance(v, float) or
-                    isinstance(v, basestring)):
-                raise Exception(u'Invalid argument: %s' % k)
-
+            raise AttributeError(u'Invalid command: %s' % command)
         try:
             func = getattr(Context, command)
-            retval = func(**args)
-        except (AttributeError, TypeError) as e:
-            raise Exception(u'Command not found: %s (%s)' % (command, e))
-        else:
-            self.send_response(
-                response=func.__name__,
-                args={'retval': retval, 'uuid': args.get('uuid', None)})
+        except AttributeError as e:
+            raise AttributeError(u'Command not found: %s (%s)' % (command, e))
+
+        if not isinstance(func, FunctionType):
+            raise AttributeError("Command refers to non-static method %s." %
+                                 unicode(func))
+
+        # check for unexpected keyword arguments
+        argspec = getargspec(func)
+        if argspec.keywords is None:  # _operation doesn't take ** args
+            unexpected_kwargs = set(args) - set(argspec.args)
+            if unexpected_kwargs:
+                raise TypeError(
+                    "Command %s got unexpected keyword arguments: %s" % (
+                        unicode(func), ", ".join(unexpected_kwargs)))
+
+            if argspec.defaults:
+                mandatory_args = argspec.args[0:-len(argspec.defaults)]
+            else:
+                mandatory_args = argspec.args
+            missing_kwargs = set(mandatory_args) - set(args)
+            if missing_kwargs:
+                raise TypeError("Command %s missing arguments: %s" % (
+                    unicode(func), ", ".join(missing_kwargs)))
+
+        return func
+
+    def handle_command(self, command, args):
+        func = self._get_command(command, args)
+        retval = func(**args)
+        self.send_response(
+            response=func.__name__,
+            args={'retval': retval, 'uuid': args.get('uuid', None)})
 
     def handle_response(self, response, args):
         pass
