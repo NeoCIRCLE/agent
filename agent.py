@@ -365,8 +365,9 @@ class SerialLineReceiver(SerialLineReceiverBase):
         if argspec.keywords is None:  # _operation doesn't take ** args
             unexpected_kwargs = set(args) - set(argspec.args)
             if unexpected_kwargs:
-                raise TypeError("Command got unexpected keyword arguments: "
-                                "%s" % ", ".join(unexpected_kwargs))
+                raise TypeError(
+                    "Command %s got unexpected keyword arguments: %s" % (
+                        unicode(func), ", ".join(unexpected_kwargs)))
 
             if argspec.defaults:
                 mandatory_args = argspec.args[0:-len(argspec.defaults)]
