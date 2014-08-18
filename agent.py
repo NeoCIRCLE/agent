@@ -20,6 +20,7 @@ from StringIO import StringIO
 from base64 import decodestring
 from shutil import rmtree, move
 from datetime import datetime
+from types import FunctionType
 
 from utils import SerialLineReceiverBase
 
@@ -354,6 +355,10 @@ class SerialLineReceiver(SerialLineReceiverBase):
             func = getattr(Context, command)
         except AttributeError as e:
             raise AttributeError(u'Command not found: %s (%s)' % (command, e))
+
+        if not isinstance(func, FunctionType):
+            raise AttributeError("Command refers to non-static method %s." %
+                                 unicode(func))
 
         # check for unexpected keyword arguments
         argspec = getargspec(func)
