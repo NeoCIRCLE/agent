@@ -367,6 +367,16 @@ class SerialLineReceiver(SerialLineReceiverBase):
             if unexpected_kwargs:
                 raise TypeError("Command got unexpected keyword arguments: "
                                 "%s" % ", ".join(unexpected_kwargs))
+
+            if argspec.defaults:
+                mandatory_args = argspec.args[0:-len(argspec.defaults)]
+            else:
+                mandatory_args = argspec.args
+            missing_kwargs = set(mandatory_args) - set(args)
+            if missing_kwargs:
+                raise TypeError("Command %s missing arguments: %s" % (
+                    unicode(func), ", ".join(missing_kwargs)))
+
         return func
 
     def handle_command(self, command, args):
