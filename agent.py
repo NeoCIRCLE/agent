@@ -369,14 +369,13 @@ class SerialLineReceiver(SerialLineReceiverBase):
                     "Command %s got unexpected keyword arguments: %s" % (
                         unicode(func), ", ".join(unexpected_kwargs)))
 
-            if argspec.defaults:
-                mandatory_args = argspec.args[0:-len(argspec.defaults)]
-            else:
-                mandatory_args = argspec.args
-            missing_kwargs = set(mandatory_args) - set(args)
-            if missing_kwargs:
-                raise TypeError("Command %s missing arguments: %s" % (
-                    unicode(func), ", ".join(missing_kwargs)))
+        mandatory_args = argspec.args
+        if argspec.defaults:  # remove those with default value
+            mandatory_args = mandatory_args[0:-len(argspec.defaults)]
+        missing_kwargs = set(mandatory_args) - set(args)
+        if missing_kwargs:
+            raise TypeError("Command %s missing arguments: %s" % (
+                unicode(func), ", ".join(missing_kwargs)))
 
         return func
 
