@@ -347,17 +347,11 @@ class SerialLineReceiver(SerialLineReceiverBase):
         self.send_response(response='status',
                            args=args)
 
-    def _get_command(self, command, args):
-        if not isinstance(command, basestring) or command.startswith('_'):
-            raise AttributeError(u'Invalid command: %s' % command)
-        try:
-            func = getattr(Context, command)
-        except AttributeError as e:
-            raise AttributeError(u'Command not found: %s (%s)' % (command, e))
-
-        if not isfunction(func):
-            raise AttributeError("Command refers to non-static method %s." %
-                                 self._pretty_fun(func))
+    def _check_args(self, func, args):
+        if not isinstance(args, dict):
+            raise TypeError("Arguments should be all keyword-arguments in a "
+                            "dict for command %s instead of %s." %
+                            (self._pretty_fun(func), type(args).__name__))
 
         # check for unexpected keyword arguments
         argspec = getargspec(func)
@@ -376,6 +370,19 @@ class SerialLineReceiver(SerialLineReceiverBase):
             raise TypeError("Command %s missing arguments: %s" % (
                 self._pretty_fun(func), ", ".join(missing_kwargs)))
 
+    def _get_command(self, command, args):
+        if not isinstance(command, basestring) or command.startswith('_'):
+            raise AttributeError(u'Invalid command: %s' % command)
+        try:
+            func = getattr(Context, command)
+        except AttributeError as e:
+            raise AttributeError(u'Command not found: %s (%s)' % (command, e))
+
+        if not isfunction(func):
+            raise AttributeError("Command refers to non-static method %s." %
+                                 self._pretty_fun(func))
+
+        self._check_args(func, args)
         return func
 
     @staticmethod
