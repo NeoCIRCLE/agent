@@ -15,12 +15,11 @@ import tarfile
 from os.path import expanduser, join, exists
 from os import mkdir, environ
 from glob import glob
-from inspect import getargspec
+from inspect import getargspec, isfunction
 from StringIO import StringIO
 from base64 import decodestring
 from shutil import rmtree, move
 from datetime import datetime
-from types import FunctionType
 
 from utils import SerialLineReceiverBase
 
@@ -356,9 +355,9 @@ class SerialLineReceiver(SerialLineReceiverBase):
         except AttributeError as e:
             raise AttributeError(u'Command not found: %s (%s)' % (command, e))
 
-        if not isinstance(func, FunctionType):
+        if not isfunction(func):
             raise AttributeError("Command refers to non-static method %s." %
-                                 unicode(func))
+                                 self._pretty_fun(func))
 
         # check for unexpected keyword arguments
         argspec = getargspec(func)
@@ -367,7 +366,7 @@ class SerialLineReceiver(SerialLineReceiverBase):
             if unexpected_kwargs:
                 raise TypeError(
                     "Command %s got unexpected keyword arguments: %s" % (
-                        unicode(func), ", ".join(unexpected_kwargs)))
+                        self._pretty_fun(func), ", ".join(unexpected_kwargs)))
 
         mandatory_args = argspec.args
         if argspec.defaults:  # remove those with default value
@@ -375,9 +374,22 @@ class SerialLineReceiver(SerialLineReceiverBase):
         missing_kwargs = set(mandatory_args) - set(args)
         if missing_kwargs:
             raise TypeError("Command %s missing arguments: %s" % (
-                unicode(func), ", ".join(missing_kwargs)))
+                self._pretty_fun(func), ", ".join(missing_kwargs)))
 
         return func
+
+    @staticmethod
+    def _pretty_fun(fun):
+        try:
+            argspec = getargspec(fun)
+            args = argspec.args
+            if argspec.varargs:
+                args.append("*" + argspec.varargs)
+            if argspec.keywords:
+                args.append("**" + argspec.keywords)
+            return "%s(%s)" % (fun.__name__, ",".join(args))
+        except:
+            return "<%s>" % type(fun).__name__
 
     def handle_command(self, command, args):
         func = self._get_command(command, args)
