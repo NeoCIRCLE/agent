@@ -38,7 +38,7 @@ AUTHORIZED_KEYS = join(SSH_DIR, 'authorized_keys')
 STORE_DIR = '/store'
 
 mount_template_linux = (
-    '//%(host)s/u-1 %(dir)s cifs username=%(username)s'
+    '//%(host)s/%(username)s %(dir)s cifs username=%(username)s'
     ',password=%(password)s,iocharset=utf8,uid=cloud  0  0\n')
 
 mount_template_windows = (
