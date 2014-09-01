@@ -13,7 +13,7 @@ import platform
 import sys
 import tarfile
 from os.path import expanduser, join, exists
-from os import mkdir, environ
+from os import mkdir, environ, chdir
 from glob import glob
 from inspect import getargspec, isfunction
 from StringIO import StringIO
@@ -24,6 +24,7 @@ from datetime import datetime
 from utils import SerialLineReceiverBase
 
 from ssh import PubKey
+from network import change_ip_ubuntu, change_ip_rhel, change_ip_windows
 
 
 logging.basicConfig()
@@ -91,24 +92,22 @@ class Context(object):
     def restart_networking():
         if system == 'Linux':
             if distro == 'debian':
-                with open('/etc/network/interfaces', 'w') as f:
-                    f.write('auto lo\n'
-                            'iface lo inet loopback\n'
-                            'auto eth0\n'
-                            'iface eth0 inet dhcp\n')
                 subprocess.call(['/etc/init.d/networking', 'restart'])
             elif distro == 'rhel':
-                with open('/etc/sysconfig/network-scripts/ifcfg-eth0',
-                          'w') as f:
-                    f.write('DEVICE=eth0\n'
-                            'BOOTPROTO=dhcp\n'
-                            'ONBOOT=yes\n')
-
+                subprocess.call(['/bin/systemctl', 'restart', 'network'])
+                pass
         elif system == 'Windows':
-            import wmi
-            w = wmi.WMI()
-            nic = w.Win32_NetworkAdapterConfiguration(IPEnabled=True)[0]
-            assert nic.EnableDHCP()[0] == 0
+            pass
+
+    @staticmethod
+    def change_ip(interfaces, dns):
+        if system == 'Linux':
+            if distro == 'debian':
+                change_ip_ubuntu(interfaces, dns)
+            elif distro == 'rhel':
+                change_ip_rhel(interfaces, dns)
+        elif system == 'Windows':
+            change_ip_windows(interfaces, dns)
 
     @staticmethod
     def set_time(time):
@@ -269,6 +268,8 @@ class Context(object):
             rmtree(old_dir, ignore_errors=True)
             move(cur_dir, old_dir)
             move(new_dir, cur_dir)
+            chdir(cur_dir)
+            subprocess.call(('pip', 'install', '-r', 'requirements.txt'))
             logger.info('Updated')
             reactor.stop()
 
