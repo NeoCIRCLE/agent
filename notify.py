@@ -14,6 +14,7 @@ import os
 import platform
 import subprocess
 import urllib2
+from urlparse import urlsplit
 
 logger = logging.getLogger()
 logger.debug("notify imported")
@@ -127,6 +128,15 @@ def open_in_browser(url):
         webbrowser.open(url, new=2, autoraise=True)
 
 
+def mount_smb(url):
+    data = urlsplit(url)
+    share = data.path.lstrip('/')
+    subprocess.call(('net', 'use', 'Z:', '/delete'))
+    subprocess.check_output((
+        'net', 'use', 'Z:', r'\\%s\%s' % (data.hostname, share),
+        data.password, '/user:%s' % data.username, '/PERSISTENT:YES'))
+
+
 def file_already_exists(name, mode=0o644):
     """Return whether file already exists, create it if not.
 
@@ -201,7 +211,10 @@ if win:
 
         def lineReceived(self, line):
             print "received", line
-            open_in_browser(line)
+            if line.startswith('cifs://'):
+                mount_smb(line)
+            else:
+                open_in_browser(line)
 
     class SubFactory(protocol.ReconnectingClientFactory):
 

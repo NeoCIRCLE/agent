@@ -41,12 +41,6 @@ mount_template_linux = (
     '//%(host)s/%(username)s %(dir)s cifs username=%(username)s'
     ',password=%(password)s,iocharset=utf8,uid=cloud  0  0\n')
 
-mount_template_windows = (
-    'net use * /delete /yes\r\n'
-    'timeout 5\r\n'
-    'net use z: \\%(host)s\\%(username)s "%(password)s" '
-    '/user:%(username)s\r\n')
-
 
 system = platform.system()
 distros = {'Scientific Linux': 'rhel',
@@ -171,9 +165,11 @@ class Context(object):
             subprocess.call('mount -a', shell=True)
 
         elif system == 'Windows':
-            with open(r'c:\Windows\System32\Repl\Import\Scripts\%s.bat'
-                      % username, 'w') as f:
-                f.write(mount_template_windows % data)
+            import notify
+            url = 'cifs://%s:%s@%s/%s' % (username, password, host, username)
+            for c in notify.clients:
+                logger.debug("sending url %s to client %s", url, unicode(c))
+                c.sendLine(url.encode())
 
     @staticmethod
     def get_keys():
