@@ -1,19 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from os import mkdir, environ, chdir
+import subprocess
+import sys
+
+chdir(sys.path[0])
+subprocess.call(('pip', 'install', '-r', 'requirements.txt'))
+
+
 from twisted.internet import reactor, defer
 from twisted.internet.task import LoopingCall
 from twisted.internet.serialport import SerialPort
 
 import uptime
 import logging
-import subprocess
 import fileinput
 import platform
-import sys
 import tarfile
 from os.path import expanduser, join, exists
-from os import mkdir, environ, chdir
 from glob import glob
 from inspect import getargspec, isfunction
 from StringIO import StringIO
@@ -268,8 +273,6 @@ class Context(object):
             rmtree(old_dir, ignore_errors=True)
             move(cur_dir, old_dir)
             move(new_dir, cur_dir)
-            chdir(cur_dir)
-            subprocess.call(('pip', 'install', '-r', 'requirements.txt'))
             logger.info('Updated')
             reactor.stop()
 
