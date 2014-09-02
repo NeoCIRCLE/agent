@@ -1,0 +1,3 @@
+#!/bin/bash
+
+sudo bash -c "source /root/.virtualenvs/agent/bin/activate; source /root/.virtualenvs/agent/bin/postactivate 2>/dev/null; cd /root/agent; ./vm_renewal"

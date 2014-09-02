@@ -23,7 +23,7 @@ from glob import glob
 from inspect import getargspec, isfunction
 from StringIO import StringIO
 from base64 import decodestring
-from shutil import rmtree, move
+from shutil import rmtree, move, copy
 from datetime import datetime
 
 from utils import SerialLineReceiverBase
@@ -273,6 +273,8 @@ class Context(object):
             rmtree(old_dir, ignore_errors=True)
             move(cur_dir, old_dir)
             move(new_dir, cur_dir)
+            if system == 'Linux':
+                copy("/root/agent/misc/vm_renewal", "/usr/local/bin/")
             logger.info('Updated')
             reactor.stop()
 
