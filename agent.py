@@ -2,11 +2,19 @@
 # -*- coding: utf-8 -*-
 
 from os import mkdir, environ, chdir
+import platform
+from shutil import copy
 import subprocess
 import sys
 
-chdir(sys.path[0])
-subprocess.call(('pip', 'install', '-r', 'requirements.txt'))
+try:
+    chdir(sys.path[0])
+    subprocess.call(('pip', 'install', '-r', 'requirements.txt'))
+    system = platform.system()
+    if system == 'Linux':
+        copy("/root/agent/misc/vm_renewal", "/usr/local/bin/")
+except:
+    pass  # hope it works
 
 
 from twisted.internet import reactor, defer
@@ -16,14 +24,13 @@ from twisted.internet.serialport import SerialPort
 import uptime
 import logging
 import fileinput
-import platform
 import tarfile
 from os.path import expanduser, join, exists
 from glob import glob
 from inspect import getargspec, isfunction
 from StringIO import StringIO
 from base64 import decodestring
-from shutil import rmtree, move, copy
+from shutil import rmtree, move
 from datetime import datetime
 
 from utils import SerialLineReceiverBase
@@ -48,7 +55,6 @@ mount_template_linux = (
     ',password=%(password)s,iocharset=utf8,uid=cloud  0  0\n')
 
 
-system = platform.system()
 distros = {'Scientific Linux': 'rhel',
            'CentOS': 'rhel',
            'CentOS Linux': 'rhel',
@@ -273,8 +279,6 @@ class Context(object):
             rmtree(old_dir, ignore_errors=True)
             move(cur_dir, old_dir)
             move(new_dir, cur_dir)
-            if system == 'Linux':
-                copy("/root/agent/misc/vm_renewal", "/usr/local/bin/")
             logger.info('Updated')
             reactor.stop()
 
