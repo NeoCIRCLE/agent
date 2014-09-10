@@ -28,15 +28,14 @@ class SerialPort(abstract.FileDescriptor):
     connected = 1
 
     def __init__(self, protocol, deviceNameOrPortNumber, reactor):
-        #self._serialFactory = VirtioSerial
-        #self._serial = self._serialFactory(port=deviceNameOrPortNumber)
-        self.hComPort = win32file.CreateFile(deviceNameOrPortNumber,
-                                             win32con.GENERIC_READ | win32con.GENERIC_WRITE,
-                                             0,  # exclusive access
-                                             None,  # no security
-                                             win32con.OPEN_EXISTING,
-                                             win32con.FILE_ATTRIBUTE_NORMAL | win32con.FILE_FLAG_OVERLAPPED,
-                                             0)
+        self.hComPort = win32file.CreateFile(
+            deviceNameOrPortNumber,
+            win32con.GENERIC_READ | win32con.GENERIC_WRITE,
+            0,  # exclusive access
+            None,  # no security
+            win32con.OPEN_EXISTING,
+            win32con.FILE_ATTRIBUTE_NORMAL | win32con.FILE_FLAG_OVERLAPPED,
+            0)
         self.reactor = reactor
         self.protocol = protocol
         self.outQueue = []
@@ -80,13 +79,16 @@ class SerialPort(abstract.FileDescriptor):
                 self._overlappedRead,
                 0)
         except:
+            import time
+            time.sleep(10)
             n = 0
         if n:
             first = str(self.read_buf[:n])
-            # now we should get everything that is already in the buffer
+            # now we should get everything that is already in the buffer (max
+            # 4096)
             win32event.ResetEvent(self._overlappedRead.hEvent)
             rc, buf = win32file.ReadFile(self.hComPort,
-                                         win32file.AllocateReadBuffer(n),
+                                         win32file.AllocateReadBuffer(4096),
                                          self._overlappedRead)
             n = win32file.GetOverlappedResult(
                 self.hComPort,
@@ -94,12 +96,11 @@ class SerialPort(abstract.FileDescriptor):
                 1)
             # handle all the received data:
             self.protocol.dataReceived(first + str(buf[:n]))
-
         # set up next one
         win32event.ResetEvent(self._overlappedRead.hEvent)
-        # rc, self.read_buf = win32file.ReadFile(self.hComPort,
-        #                                       win32file.AllocateReadBuffer(1),
-        #                                       self._overlappedRead)
+        rc, self.read_buf = win32file.ReadFile(self.hComPort,
+                                               win32file.AllocateReadBuffer(1),
+                                               self._overlappedRead)
 
     def write(self, data):
         if data:
