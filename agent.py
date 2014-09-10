@@ -452,7 +452,7 @@ def main():
         port = "/dev/virtio-ports/agent"
         if not exists(port):
             port = '/dev/ttyS0'
-            logger.info("Opening port %s", port)
+    logger.info("Opening port %s", port)
     SerialPort(SerialLineReceiver(), port, reactor)
     try:
         from notify import register_publisher
