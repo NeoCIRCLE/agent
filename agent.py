@@ -7,10 +7,11 @@ from shutil import copy
 import subprocess
 import sys
 
+system = platform.system()
+
 try:
     chdir(sys.path[0])
     subprocess.call(('pip', 'install', '-r', 'requirements.txt'))
-    system = platform.system()
     if system == 'Linux':
         copy("/root/agent/misc/vm_renewal", "/usr/local/bin/")
 except:
@@ -19,7 +20,7 @@ except:
 
 from twisted.internet import reactor, defer
 from twisted.internet.task import LoopingCall
-from twisted.internet.serialport import SerialPort
+
 
 import uptime
 import logging
@@ -43,7 +44,6 @@ logging.basicConfig()
 logger = logging.getLogger()
 level = environ.get('LOGLEVEL', 'INFO')
 logger.setLevel(level)
-
 
 SSH_DIR = expanduser('~cloud/.ssh')
 AUTHORIZED_KEYS = join(SSH_DIR, 'authorized_keys')
@@ -332,7 +332,11 @@ class SerialLineReceiver(SerialLineReceiverBase):
                           args={})
 
     def tick(self):
-        self.send_status()
+        logger.debug("Sending tick")
+        try:
+            self.send_status()
+        except:
+            logger.exception("Twisted hide exception")
 
     def __init__(self):
         super(SerialLineReceiver, self).__init__()
@@ -415,20 +419,49 @@ class SerialLineReceiver(SerialLineReceiverBase):
         pass
 
 
+def get_virtio_device():
+    path = None
+    GUID = '{6FDE7521-1B65-48ae-B628-80BE62016026}'
+    from infi.devicemanager import DeviceManager
+    dm = DeviceManager()
+    dm.root.rescan()
+    # Search Virtio-Serial by name TODO: search by class_guid
+    for i in dm.all_devices:
+        if i.has_property("description"):
+            if "virtio-serial".upper() in i.description.upper():
+                path = ("\\\\?\\" +
+                        i.children[0].instance_id.lower().replace('\\', '#') +
+                        "#" + GUID.lower()
+                        )
+    return path
+
+
 def main():
     if system == 'Windows':
-        import pythoncom
-        pythoncom.CoInitialize()
-        port = r'\\.\COM1'
+        port = get_virtio_device()
+        if port:
+            from w32serial import SerialPort
+        else:
+            from twisted.internet.serial import SerialPort
+            import pythoncom
+            pythoncom.CoInitialize()
+            port = r'\\.\COM1'
     else:
-        port = '/dev/ttyS0'
-    SerialPort(SerialLineReceiver(), port, reactor, baudrate=115200)
+        from twisted.internet.serial import SerialPort
+        # Try virtio first
+        port = "/dev/virtio-ports/agent"
+        if not exists(port):
+            port = '/dev/ttyS0'
+            logger.info("Opening port %s", port)
+    SerialPort(SerialLineReceiver(), port, reactor)
     try:
         from notify import register_publisher
         register_publisher(reactor)
     except:
         logger.exception("Couldnt register notify publisher")
+    logger.debug("Starting reactor.")
     reactor.run()
+    logger.debug("Reactor after run.")
 
 
 if __name__ == '__main__':
