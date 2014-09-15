@@ -455,7 +455,7 @@ class SerialLineReceiver(SerialLineReceiverBase):
         pass
 
 
-def get_virtio_device():
+def _get_virtio_device():
     path = None
     GUID = '{6FDE7521-1B65-48ae-B628-80BE62016026}'
     from infi.devicemanager import DeviceManager
@@ -474,7 +474,7 @@ def get_virtio_device():
 
 def main():
     if system == 'Windows':
-        port = get_virtio_device()
+        port = _get_virtio_device()
         if port:
             from w32serial import SerialPort
         else:
