@@ -264,8 +264,8 @@ class Context(object):
             # TODO
             pass
 
-    @staticmethod
-    def update(data, uuid):
+    @classmethod
+    def _update_linux(cls, data, uuid):
         cur_dir = sys.path[0]
         new_dir = cur_dir + '.new'
         old_dir = cur_dir + '.old'
@@ -281,6 +281,42 @@ class Context(object):
             move(new_dir, cur_dir)
             logger.info('Updated')
             reactor.stop()
+
+    @classmethod
+    def _update_windows(cls, data, executable, uuid):
+        # Extract the tar to the new path
+        cur_dir = sys.path[0]
+        new_dir = cur_dir + '.version'
+        f = StringIO(decodestring(data))
+        try:
+            tar = tarfile.TarFile.open("dummy", fileobj=f, mode='r|gz')
+            tar.extractall(new_dir)
+        except tarfile.ReadError as e:
+            logger.error(e)
+        else:
+            cls._update_registry(new_dir, executable)
+            logger.info('Updated')
+            reactor.stop()
+
+    @classmethod
+    def _update_registry(cls, dir, executable):
+        # HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\services\circle-agent
+        from _winreg import (OpenKeyEx, SetValueEx, QueryValueEx,
+                             HKEY_LOCAL_MACHINE, KEY_ALL_ACCESS)
+        with OpenKeyEx(HKEY_LOCAL_MACHINE,
+                       r'SYSTEM\CurrentControlSet\services\circle-agent',
+                       0,
+                       KEY_ALL_ACCESS) as key:
+            (old_executable, reg_type) = QueryValueEx(key, "ImagePath")
+            SetValueEx(key, "ImagePath", None, 2, join(dir, executable))
+        return old_executable
+
+    @staticmethod
+    def update(data, executable, uuid):
+        if system == "Windows":
+            Context._update_windows(data, executable, uuid)
+        else:
+            Context._update_linux(data, executable, uuid)
 
     @staticmethod
     def ipaddresses():
