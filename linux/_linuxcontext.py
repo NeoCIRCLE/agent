@@ -30,7 +30,8 @@ from hashlib import md5
 
 
 from ssh import PubKey
-from network import change_ip_ubuntu, change_ip_rhel
+from .network import change_ip_ubuntu, change_ip_rhel
+from context import BaseContext
 
 from twisted.internet import reactor
 
@@ -58,7 +59,7 @@ if system == 'Linux':
     distro = distros[platform.linux_distribution()[0]]
 
 
-class Context(object):
+class Context(BaseContext):
 
     # http://stackoverflow.com/questions/12081310/
     # python-module-to-change-system-date-and-time
