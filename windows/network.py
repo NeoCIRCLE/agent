@@ -26,7 +26,7 @@ def get_interfaces_windows(interfaces):
             yield nic, conf
 
 
-def change_ip(interfaces, dns):
+def change_ip_windows(interfaces, dns):
     for nic, conf in get_interfaces_windows(interfaces):
         link_local = IPNetwork('fe80::/16')
         new_addrs = [IPNetwork(ip) for ip in conf['addresses']]

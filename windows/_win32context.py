@@ -4,9 +4,10 @@
 import platform
 
 system = platform.system()
-working_directory = "C:/agent"
+working_directory = r"C:\circle"
 
-from os import environ, join
+from os import environ
+from os.path import join
 
 import logging
 import tarfile
@@ -97,7 +98,7 @@ class Context(BaseContext):
             myfile.write(data)
 
     @staticmethod
-    def _update_registry(cls, dir, executable):
+    def _update_registry(dir, executable):
         # HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\services\circle-agent
         from _winreg import (OpenKeyEx, SetValueEx, QueryValueEx,
                              HKEY_LOCAL_MACHINE, KEY_ALL_ACCESS)

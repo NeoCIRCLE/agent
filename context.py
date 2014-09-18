@@ -1,9 +1,10 @@
-import platform
-from os.path import exists
-
 """ This is the defautl context file. It replaces the Context class
     to the platform specific one.
 """
+import platform
+from os.path import exists
+from sys import path
+# Add current directory to the import path
 
 
 def _get_virtio_device():
@@ -26,7 +27,7 @@ def _get_virtio_device():
 def get_context():
     system = platform.system()
     if system == "Windows":
-        from win32._win32context import Context
+        from windows._win32context import Context
     elif system == "Linux":
         from linux._linuxcontext import Context
     else:
@@ -40,7 +41,7 @@ def get_serial():
     if system == 'Windows':
         port = _get_virtio_device()
         if port:
-            from win32.win32virtio import SerialPort
+            from windows.win32virtio import SerialPort
         else:
             from twisted.internet.serial import SerialPort
             import pythoncom
