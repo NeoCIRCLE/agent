@@ -3,8 +3,6 @@
 """
 import platform
 from os.path import exists
-from sys import path
-# Add current directory to the import path
 
 
 def _get_virtio_device():

@@ -29,9 +29,9 @@ from inspect import getargspec, isfunction
 
 from utils import SerialLineReceiverBase
 
-# Note: Import everything because later we need to use the BaseContext (relative
-# import error.
-from context import *
+# Note: Import everything because later we need to use the BaseContext
+# (relative import error.
+from context import BaseContext, get_context, get_serial  # noqa
 
 Context = get_context()
 
