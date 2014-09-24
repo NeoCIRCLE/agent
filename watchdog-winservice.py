@@ -23,13 +23,14 @@ logger.info("%s loaded", __file__)
 service_name = "circle-agent"
 stopped = False
 
+
 def watch():
     def check_service(service_name):
         return win32serviceutil.QueryServiceStatus(service_name)[1] == 4
-        
+
     def start_service():
         win32serviceutil.StartService(service_name)
-        
+
     while True:
         if not check_service(service_name):
             logger.info("Service %s is not running.", service_name)
@@ -37,6 +38,7 @@ def watch():
         if stopped:
             return
         sleep(10)
+
 
 class AppServerSvc (win32serviceutil.ServiceFramework):
     _svc_name_ = "circle-watchdog"
@@ -50,6 +52,7 @@ class AppServerSvc (win32serviceutil.ServiceFramework):
     def SvcStop(self):
         self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
         win32event.SetEvent(self.hWaitStop)
+        global stopped
         stopped = True
         logger.info("%s stopped", __file__)
 
