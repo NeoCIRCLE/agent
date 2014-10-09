@@ -1,8 +1,7 @@
 import netifaces
-from netaddr import IPNetwork, IPAddress
+from netaddr import IPNetwork
 import fileinput
 import logging
-from subprocess import check_output, CalledProcessError
 
 logger = logging.getLogger()
 
@@ -122,68 +121,3 @@ def change_ip_rhel(interfaces, dns):
                                 'ip': ip,
                                 'netmask': str(ip_with_prefix.netmask),
                                 'gw': conf['gw4']})
-
-
-def get_interfaces_windows(interfaces):
-    import wmi
-    nics = wmi.WMI().Win32_NetworkAdapterConfiguration(IPEnabled=True)
-    for nic in nics:
-        conf = interfaces.get(nic.MACAddress)
-        if conf:
-            yield nic, conf
-
-
-def change_ip_windows(interfaces, dns):
-    for nic, conf in get_interfaces_windows(interfaces):
-        link_local = IPNetwork('fe80::/16')
-        new_addrs = [IPNetwork(ip) for ip in conf['addresses']]
-        new_addrs_str = set(str(ip) for ip in new_addrs)
-        old_addrs = [IPNetwork('%s/%s' % (ip, nic.IPSubnet[i]))
-                     for i, ip in enumerate(nic.IPAddress)
-                     if IPAddress(ip) not in link_local]
-        old_addrs_str = set(str(ip) for ip in old_addrs)
-
-        changed = (
-            new_addrs_str != old_addrs_str or
-            set(nic.DefaultIPGateway) != set([conf['gw4'], conf['gw6']]))
-        if changed or 1:
-            logger.info('new config for <%s(%s)>: %s', nic.Description,
-                        nic.MACAddress, ', '.join(new_addrs_str))
-            # IPv4
-            ipv4_addrs = [str(ip.ip) for ip in new_addrs
-                          if ip.version == 4]
-            ipv4_masks = [str(ip.netmask) for ip in new_addrs
-                          if ip.version == 4]
-            logger.debug('<%s>.EnableStatic(%s, %s) called', nic.Description,
-                         ipv4_addrs, ipv4_masks)
-            retval = nic.EnableStatic(
-                IPAddress=ipv4_addrs, SubnetMask=ipv4_masks)
-            assert retval == (0, )
-
-            nic.SetGateways(DefaultIPGateway=[conf['gw4']])
-            assert retval == (0, )
-
-            # IPv6
-            for ip in new_addrs:
-                if ip.version == 6 and str(ip) not in old_addrs_str:
-                    logger.debug('add %s (%s)', ip, nic.Description)
-                    check_output(
-                        'netsh interface ipv6 add address '
-                        'interface=%s address=%s'
-                        % (nic.InterfaceIndex, ip), shell=True)
-
-            for ip in old_addrs:
-                if ip.version == 6 and str(ip) not in new_addrs_str:
-                    logger.debug('delete %s (%s)', ip, nic.Description)
-                    check_output(
-                        'netsh interface ipv6 delete address '
-                        'interface=%s address=%s'
-                        % (nic.InterfaceIndex, ip.ip), shell=True)
-
-            try:
-                check_output('netsh interface ipv6 del route ::/0 interface=%s'
-                             % nic.InterfaceIndex, shell=True)
-            except CalledProcessError:
-                pass
-            check_output('netsh interface ipv6 add route ::/0 interface=%s %s'
-                         % (nic.InterfaceIndex, conf['gw6']), shell=True)

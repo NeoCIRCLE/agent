@@ -7,6 +7,7 @@ logger = logging.getLogger()
 
 class SerialLineReceiverBase(LineReceiver, object):
     delimiter = '\r'
+    MAX_LENGTH = 1024*1024*128
 
     def send_response(self, response, args):
         self.transport.write(json.dumps({'response': response,
