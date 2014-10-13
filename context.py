@@ -41,7 +41,7 @@ def get_serial():
         if port:
             from windows.win32virtio import SerialPort
         else:
-            from twisted.internet.serial import SerialPort
+            from twisted.internet.serialport import SerialPort
             import pythoncom
             pythoncom.CoInitialize()
             port = r'\\.\COM1'
@@ -50,7 +50,7 @@ def get_serial():
         if exists(port):
             from linux.posixvirtio import SerialPort
         else:
-            from twisted.internet.serial import SerialPort
+            from twisted.internet.serialport import SerialPort
             port = '/dev/ttyS0'
     else:
         raise NotImplementedError("Platform %s is not supported.", system)
