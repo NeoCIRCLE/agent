@@ -38,12 +38,12 @@ def get_serial():
     port = None
     if system == 'Windows':
         port = _get_virtio_device()
+        import pythoncom
+        pythoncom.CoInitialize()
         if port:
             from windows.win32virtio import SerialPort
         else:
             from twisted.internet.serialport import SerialPort
-            import pythoncom
-            pythoncom.CoInitialize()
             port = r'\\.\COM1'
     elif system == "Linux":
         port = "/dev/virtio-ports/agent"
