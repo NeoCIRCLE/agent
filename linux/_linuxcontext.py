@@ -228,7 +228,7 @@ class Context(BaseContext):
     @staticmethod
     def update(filename, executable, checksum, uuid):
         new_dir = working_directory + '.new'
-        old_dir = working_directory + '.old'
+        old_dir = working_directory + '.old.%s' % uuid
         with open(filename, "r") as f:
             data = f.read()
             local_checksum = md5(data).hexdigest()

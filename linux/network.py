@@ -2,6 +2,7 @@ import netifaces
 from netaddr import IPNetwork
 import fileinput
 import logging
+import subprocess
 
 logger = logging.getLogger()
 
@@ -35,9 +36,13 @@ def remove_interfaces_ubuntu(devices):
             continue
 
         if words[0] == 'iface':
-            if words[1].split(':')[0] in devices:
+            ifname = words[1].split(':')[0]
+            if ifname in devices:
                 # remove line
                 delete_device = True
+                subprocess.call(('/sbin/ip', 'addr', 'flush', 'dev', ifname))
+                subprocess.call(('/sbin/ip', 'link', 'set', 'dev', ifname,
+                                 'down'))
                 continue
             else:
                 delete_device = False
