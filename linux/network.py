@@ -40,6 +40,7 @@ def remove_interfaces_ubuntu(devices):
             if ifname in devices:
                 # remove line
                 delete_device = True
+                subprocess.call(('/sbin/ifdown', ifname))
                 subprocess.call(('/sbin/ip', 'addr', 'flush', 'dev', ifname))
                 subprocess.call(('/sbin/ip', 'link', 'set', 'dev', ifname,
                                  'down'))
@@ -89,6 +90,8 @@ def change_ip_ubuntu(interfaces, dns):
                         'prefixlen': prefixlen,
                         'gw': conf['gw6' if ip.version == 6 else 'gw4'],
                         'dns': dns})
+    for ifname, conf in data:
+        subprocess.call(('/sbin/ifup', ifname))
 
 
 # example:
