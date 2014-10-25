@@ -106,12 +106,17 @@ def change_ip_ubuntu(interfaces, dns):
 
 def change_ip_rhel(interfaces, dns):
     for ifname, conf in get_interfaces_linux(interfaces):
+        subprocess.call(('/sbin/ifdown', ifname))
+        subprocess.call(('/sbin/ip', 'addr', 'flush', 'dev', ifname))
+        subprocess.call(('/sbin/ip', 'link', 'set', 'dev', ifname, 'down'))
         with open(ifcfg_template % ifname,
                   'w') as f:
             f.write('DEVICE=%s\n'
+                    'DNS1=%s\n'
                     'BOOTPROTO=none\n'
+                    'NM_CONTROLLED=no\n'
                     'USERCTL=no\n'
-                    'ONBOOT=yes\n' % ifname)
+                    'ONBOOT=yes\n' % (ifname, dns))
             for i in conf['addresses']:
                 ip_with_prefix = IPNetwork(i)
                 ip = ip_with_prefix.ip
@@ -129,3 +134,4 @@ def change_ip_rhel(interfaces, dns):
                                 'ip': ip,
                                 'netmask': str(ip_with_prefix.netmask),
                                 'gw': conf['gw4']})
+        subprocess.call(('/sbin/ifup', ifname))
