@@ -80,3 +80,9 @@ def change_ip_windows(interfaces, dns):
                 pass
             check_output('netsh interface ipv6 add route ::/0 interface=%s %s'
                          % (nic.InterfaceIndex, conf['gw6']), shell=True)
+            try:
+                check_output('netsh interface ipv4 add dnsserver %s '
+                             'address=%s index=1'
+                             % (nic.InterfaceIndex, dns), shell=True)
+            except CalledProcessError:
+                pass
