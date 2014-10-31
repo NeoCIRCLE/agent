@@ -2,7 +2,6 @@
     to the platform specific one.
 """
 import platform
-from os.path import exists
 
 
 def _get_virtio_device():
@@ -47,11 +46,13 @@ def get_serial():
             port = r'\\.\COM1'
     elif system == "Linux":
         port = "/dev/virtio-ports/agent"
-        if exists(port):
-            from linux.posixvirtio import SerialPort
-        else:
+        try:
+            open(port, 'rw').close()
+        except (OSError, IOError):
             from twisted.internet.serialport import SerialPort
             port = '/dev/ttyS0'
+        else:
+            from linux.posixvirtio import SerialPort
     else:
         raise NotImplementedError("Platform %s is not supported.", system)
     return (SerialPort, port)
