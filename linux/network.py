@@ -40,10 +40,6 @@ def remove_interfaces_ubuntu(devices):
             if ifname in devices:
                 # remove line
                 delete_device = True
-                subprocess.call(('/sbin/ifdown', ifname))
-                subprocess.call(('/sbin/ip', 'addr', 'flush', 'dev', ifname))
-                subprocess.call(('/sbin/ip', 'link', 'set', 'dev', ifname,
-                                 'down'))
                 continue
             else:
                 delete_device = False
@@ -58,6 +54,12 @@ def remove_interfaces_ubuntu(devices):
 
 def change_ip_ubuntu(interfaces, dns):
     data = list(get_interfaces_linux(interfaces))
+
+    for ifname, conf in data:
+        subprocess.call(('/sbin/ifdown', ifname))
+        subprocess.call(('/sbin/ip', 'addr', 'flush', 'dev', ifname))
+        subprocess.call(('/sbin/ip', 'link', 'set', 'dev', ifname,
+                         'down'))
     remove_interfaces_ubuntu(dict(data).keys())
 
     with open(interfaces_file, 'a') as f:
