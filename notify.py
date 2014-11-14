@@ -77,9 +77,11 @@ def accept():
         data = json.load(rsp)
         newtime = data["new_suspend_time"]
         # Parse time from JSON (Create UTC Localized Datetime objec)
-        parsed_time =  datetime.datetime.strptime(newtime[:-6], "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=UTC)
+        parsed_time = datetime.datetime.strptime(
+            newtime[:-6], "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=UTC)
         # Convert to the machine localization
-        new_local_time = parsed_time.astimezone(get_localzone()).strftime("%Y-%m-%d %H:%M:%S")
+        new_local_time = parsed_time.astimezone(
+            get_localzone()).strftime("%Y-%m-%d %H:%M:%S")
     except ValueError as e:
         print "Parsing time failed: %s" % e
     except Exception as e:
@@ -88,7 +90,8 @@ def accept():
         logger.exception("renew failed")
         return False
     else:
-        print "Renew succeeded. The machine will be suspended at %s." % new_local_time
+        print("Renew succeeded. The machine will be "
+              "suspended at %s." % new_local_time)
         os.remove(file_path)
         return True
 
