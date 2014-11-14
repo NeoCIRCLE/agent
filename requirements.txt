@@ -5,3 +5,5 @@ uptime==3.0.1
 netifaces==0.10.4
 netaddr==0.7.12
 infi.devicemanager
+tzlocal
+pytz
