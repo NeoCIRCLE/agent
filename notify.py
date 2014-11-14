@@ -53,6 +53,9 @@ def wall(text):
 
 
 def accept():
+    import datetime
+    from tzlocal import get_localzone
+    from pytz import UTC
     file_path = os.path.join(get_temp_dir(), file_name)
     if not os.path.isfile(file_path):
         print "There is no recent notification to accept."
@@ -73,12 +76,19 @@ def accept():
         rsp = opener.open(req)
         data = json.load(rsp)
         newtime = data["new_suspend_time"]
-    except:
+        # Parse time from JSON (Create UTC Localized Datetime objec)
+        parsed_time =  datetime.datetime.strptime(newtime[:-6], "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=UTC)
+        # Convert to the machine localization
+        new_local_time = parsed_time.astimezone(get_localzone()).strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError as e:
+        print "Parsing time failed: %s" % e
+    except Exception as e:
+        print e
         print "Renewal failed. Please try it manually at %s" % url
         logger.exception("renew failed")
         return False
     else:
-        print "Renew succeeded. The machine will be suspended at %s." % newtime
+        print "Renew succeeded. The machine will be suspended at %s." % new_local_time
         os.remove(file_path)
         return True
 
