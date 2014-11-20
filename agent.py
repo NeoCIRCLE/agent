@@ -44,6 +44,7 @@ logger.setLevel(level)
 class SerialLineReceiver(SerialLineReceiverBase):
 
     def connectionMade(self):
+        self.transport.write('\r\n')
         self.send_command(
             command='agent_started',
             args={'version': Context.get_agent_version(),
