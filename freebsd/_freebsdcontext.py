@@ -50,16 +50,6 @@ mount_template_linux = (
     '//%(host)s/%(username)s %(dir)s cifs username=%(username)s'
     ',password=%(password)s,iocharset=utf8,uid=cloud  0  0\n')
 
-
-distros = {'Scientific Linux': 'rhel',
-           'CentOS': 'rhel',
-           'CentOS Linux': 'rhel',
-           'Debian': 'debian',
-           'Ubuntu': 'debian'}
-if system == 'Linux':
-    distro = distros[platform.linux_distribution()[0]]
-
-
 class Context(BaseContext):
 
     # http://stackoverflow.com/questions/12081310/
