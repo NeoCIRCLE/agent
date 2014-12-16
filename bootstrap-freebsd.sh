@@ -2,6 +2,10 @@
 
 pkg install -y devel/git lang/python devel/py-pip sysutils/screen editors/vim-lite
 
+# create the required backdoor user
+pw user add cloud -m
+pw group mod wheel -m cloud
+
 if [ ! -d /usr/ports ]
 then
 	git clone https://github.com/HardenedBSD/freebsd-ports.git /usr/ports
