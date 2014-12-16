@@ -88,7 +88,7 @@ def change_ip_freebsd(interfaces, dns):
                         'gw': conf['gw6' if ip.version == 6 else 'gw4'],
                         'dns': dns})
     for ifname, conf in data:
-        subprocess.call(('/sbin/ifup', ifname))
+        subprocess.call(('/usr/sbin/service', 'netif', 'start', ifname))
 
 
 # example:

@@ -12,9 +12,9 @@ working_directory = sys.path[0]
 
 try:
     # load virtio console driver, the device is /dev/ttyV0.1
-    subprocess.call(('kldload', '-n', 'virtio_console'))
+    subprocess.call(('/sbin/kldload', '-n', 'virtio_console'))
     chdir(working_directory)
-    subprocess.call(('pip', 'install', '-r', 'requirements.txt'))
+    subprocess.call(('/usr/local/bin/pip', 'install', '-r', 'requirements.txt'))
     copy("/root/agent/misc/vm_renewal", "/usr/local/bin/")
 except:
     pass  # hope it works
@@ -90,7 +90,7 @@ class Context(BaseContext):
 
     @staticmethod
     def restart_networking():
-        subprocess.call(['/sbin/service', 'netif', 'restart'])
+        subprocess.call(['/usr/sbin/service', 'netif', 'restart'])
 
     @staticmethod
     def change_ip(interfaces, dns):
@@ -129,7 +129,7 @@ class Context(BaseContext):
         with open('/etc/fstab', 'a') as f:
             f.write(mount_template_linux % data)
 
-        subprocess.call('mount -a', shell=True)
+        subprocess.call('/sbin/mount -a', shell=True)
 
     @staticmethod
     def get_keys():
@@ -197,10 +197,7 @@ class Context(BaseContext):
 
     @staticmethod
     def start_access_server():
-        try:
-            subprocess.call(('/sbin/start', 'ssh'))
-        except OSError:
-            subprocess.call(('/bin/systemctl', 'start', 'sshd.service'))
+        subprocess.call(('/usr/sbin/service', 'ssh', 'start'))
 
     @staticmethod
     def append(data, filename, chunk_number, uuid):
