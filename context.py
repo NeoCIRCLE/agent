@@ -27,6 +27,8 @@ def get_context():
         from windows._win32context import Context
     elif system == "Linux":
         from linux._linuxcontext import Context
+    elif system == "FreeBSD":
+	from freebsd._freebsdcontext import Context
     else:
         raise NotImplementedError("Platform %s is not supported.", system)
     return Context
@@ -53,6 +55,15 @@ def get_serial():
             port = '/dev/ttyS0'
         else:
             from linux.posixvirtio import SerialPort
+    elif system == "FreeBSD":
+        port = "/dev/ttyV0.1"
+        try:
+            open(port, 'rw').close()
+        except (OSError, IOError):
+            from twisted.internet.serialport import SerialPort
+            port = '/dev/ttyu0'
+        else:
+            from freebsd.posixvirtio import SerialPort
     else:
         raise NotImplementedError("Platform %s is not supported.", system)
     return (SerialPort, port)

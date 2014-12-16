@@ -11,9 +11,11 @@ system = platform.system()
 working_directory = sys.path[0]
 
 try:
+    # load virtio console driver, the device is /dev/ttyV0.1
+    subprocess.call(('kldload', '-n', 'virtio_console'))
     chdir(working_directory)
     subprocess.call(('pip', 'install', '-r', 'requirements.txt'))
-    if system == 'Linux':
+    if system == 'FreeBSD':
         copy("/root/agent/misc/vm_renewal", "/usr/local/bin/")
 except:
     pass  # hope it works
