@@ -6,13 +6,11 @@ import subprocess
 
 logger = logging.getLogger()
 
-interfaces_file = '/etc/network/interfaces'
-ifcfg_template = '/etc/sysconfig/network-scripts/ifcfg-%s'
+interfaces_file = '/etc/rc.conf.d/ifconfig_'
 
-
-def get_interfaces_linux(interfaces):
+def get_interfaces_freebsd(interfaces):
     for ifname in netifaces.interfaces():
-        mac = netifaces.ifaddresses(ifname)[17][0]['addr']
+        mac = netifaces.ifaddresses(ifname)[18][0]['addr']
         conf = interfaces.get(mac.upper())
         if conf:
             yield ifname, conf
@@ -52,15 +50,12 @@ def remove_interfaces_ubuntu(devices):
         print line
 
 
-def change_ip_ubuntu(interfaces, dns):
-    data = list(get_interfaces_linux(interfaces))
+def change_ip_freebsd(interfaces, dns):
+    data = list(get_interfaces_freebsd(interfaces))
 
     for ifname, conf in data:
-        subprocess.call(('/sbin/ifdown', ifname))
-        subprocess.call(('/sbin/ip', 'addr', 'flush', 'dev', ifname))
-        subprocess.call(('/sbin/ip', 'link', 'set', 'dev', ifname,
-                         'down'))
-    remove_interfaces_ubuntu(dict(data).keys())
+        subprocess.call(('/usr/sbin/service','netif', 'stop', ifname))
+    #remove_interfaces_ubuntu(dict(data).keys())
 
     with open(interfaces_file, 'a') as f:
         for ifname, conf in data:
@@ -105,35 +100,3 @@ def change_ip_ubuntu(interfaces, dns):
 #        u'gw4': u'10.255.255.1', u'addresses': [u'10.255.255.9']}},
 #    '8.8.8.8')
 
-
-def change_ip_rhel(interfaces, dns):
-    for ifname, conf in get_interfaces_linux(interfaces):
-        subprocess.call(('/sbin/ifdown', ifname))
-        subprocess.call(('/sbin/ip', 'addr', 'flush', 'dev', ifname))
-        subprocess.call(('/sbin/ip', 'link', 'set', 'dev', ifname, 'down'))
-        with open(ifcfg_template % ifname,
-                  'w') as f:
-            f.write('DEVICE=%s\n'
-                    'DNS1=%s\n'
-                    'BOOTPROTO=none\n'
-                    'NM_CONTROLLED=no\n'
-                    'USERCTL=no\n'
-                    'ONBOOT=yes\n' % (ifname, dns))
-            for i in conf['addresses']:
-                ip_with_prefix = IPNetwork(i)
-                ip = ip_with_prefix.ip
-                if ip.version == 6:
-                    f.write('IPV6INIT=yes\n'
-                            'IPV6ADDR=%(ip)s/%(prefixlen)d\n'
-                            'IPV6_DEFAULTGW=%(gw)s\n' % {
-                                'ip': ip,
-                                'prefixlen': ip_with_prefix.prefixlen,
-                                'gw': conf['gw6']})
-                else:
-                    f.write('NETMASK=%(netmask)s\n'
-                            'IPADDR=%(ip)s\n'
-                            'GATEWAY=%(gw)s\n' % {
-                                'ip': ip,
-                                'netmask': str(ip_with_prefix.netmask),
-                                'gw': conf['gw4']})
-        subprocess.call(('/sbin/ifup', ifname))

@@ -32,7 +32,7 @@ from hashlib import md5
 
 
 from ssh import PubKey
-from .network import change_ip_ubuntu, change_ip_rhel
+from .network import change_ip_freebsd
 from context import BaseContext
 
 from twisted.internet import reactor
@@ -65,7 +65,7 @@ class Context(BaseContext):
 
     # http://stackoverflow.com/questions/12081310/
     # python-module-to-change-system-date-and-time
-    def _linux_set_time(time):
+    def _freebsd_set_time(time):
         import ctypes
         import ctypes.util
 
@@ -91,45 +91,30 @@ class Context(BaseContext):
 
     @staticmethod
     def restart_networking():
-        if distro == 'debian':
-            subprocess.call(['/etc/init.d/networking', 'restart'])
-        elif distro == 'rhel':
-            subprocess.call(['/bin/systemctl', 'restart', 'network'])
-            pass
+        subprocess.call(['/sbin/service', 'netif', 'restart'])
 
     @staticmethod
     def change_ip(interfaces, dns):
-        if distro == 'debian':
-            change_ip_ubuntu(interfaces, dns)
-        elif distro == 'rhel':
-            change_ip_rhel(interfaces, dns)
+        change_ip_freebsd(interfaces, dns)
 
     @staticmethod
     def set_time(time):
-        Context._linux_set_time(float(time))
+        Context._freebsd_set_time(float(time))
         try:
-            subprocess.call(['/etc/init.d/ntp', 'restart'])
+            subprocess.call(['/usr/sbin/service' 'ntpd', 'onerestart'])
         except:
             pass
 
     @staticmethod
     def set_hostname(hostname):
-        if distro == 'debian':
-            with open('/etc/hostname', 'w') as f:
-                f.write(hostname)
-        elif distro == 'rhel':
-            for line in fileinput.input('/etc/sysconfig/network',
-                                        inplace=1):
-                if line.startswith('HOSTNAME='):
-                    print 'HOSTNAME=%s' % hostname
-                else:
-                    print line.rstrip()
+        with open('/etc/hostname', 'w') as f:
+            f.write(hostname)
 
         with open('/etc/hosts', 'w') as f:
             f.write("127.0.0.1 localhost\n"
                     "127.0.1.1 %s\n" % hostname)
 
-        subprocess.call(['/bin/hostname', hostname])
+        subprocess.call(['/usr/sbin/service', 'hostname', 'restart'])
 
     @staticmethod
     def mount_store(host, username, password):
