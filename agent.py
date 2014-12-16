@@ -13,8 +13,7 @@ if system == "Linux" or system == "FreeBSD" :
     try:
         chdir(sys.path[0])
         subprocess.call(('pip', 'install', '-r', 'requirements.txt'))
-        if system == 'Linux' or system == "FreeBSD":
-            copy("/root/agent/misc/vm_renewal", "/usr/local/bin/")
+        copy("/root/agent/misc/vm_renewal", "/usr/local/bin/")
     except:
         pass  # hope it works
 
