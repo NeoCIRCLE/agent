@@ -15,8 +15,7 @@ try:
     subprocess.call(('kldload', '-n', 'virtio_console'))
     chdir(working_directory)
     subprocess.call(('pip', 'install', '-r', 'requirements.txt'))
-    if system == 'FreeBSD':
-        copy("/root/agent/misc/vm_renewal", "/usr/local/bin/")
+    copy("/root/agent/misc/vm_renewal", "/usr/local/bin/")
 except:
     pass  # hope it works
 
