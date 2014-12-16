@@ -11,8 +11,6 @@ then
 	pw group mod wheel -m cloud
 fi
 
-exit
-
 if [ ! -d /usr/ports ]
 then
 	git clone https://github.com/HardenedBSD/freebsd-ports.git /usr/ports

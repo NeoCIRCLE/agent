@@ -83,8 +83,8 @@ class SerialLineReceiver(SerialLineReceiverBase):
                 "uptime": {"seconds": uptime.uptime()},
                 "disk": disk_usage,
                 "user": {"count": len(psutil.get_users())}}
-        self.send_response(response='status',
-                           args=args)
+        self.send_response(response='status', args=args)
+        logger.debug("send_status finished")
 
     def _check_args(self, func, args):
         if not isinstance(args, dict):
@@ -122,6 +122,7 @@ class SerialLineReceiver(SerialLineReceiverBase):
                                  self._pretty_fun(func))
 
         self._check_args(func, args)
+        logger.debug("_get_command finished")
         return func
 
     @staticmethod
