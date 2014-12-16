@@ -2,9 +2,16 @@
 
 pkg install -y devel/git lang/python devel/py-pip sysutils/screen editors/vim-lite
 
-# create the required backdoor user
-pw user add cloud -m
-pw group mod wheel -m cloud
+grep "^cloud:" /etc/passwd > /dev/null
+ret=$?
+if [ $ret -ne 0 ]
+then
+	# create the required backdoor user
+	pw user add cloud -m
+	pw group mod wheel -m cloud
+fi
+
+exit
 
 if [ ! -d /usr/ports ]
 then
