@@ -1,6 +1,6 @@
 #!/bin/sh
 
-setenv LOGLEVEL DEBUG
+export LOGLEVEL=DEBUG
 
 pkg install -y devel/git lang/python devel/py-pip sysutils/screen editors/vim-lite
 
