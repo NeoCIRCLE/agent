@@ -225,7 +225,7 @@ class Context(BaseContext):
         args = {}
         interfaces = netifaces.interfaces()
         for i in interfaces:
-            if i == 'lo':
+            if i == 'lo0':
                 continue
             args[i] = []
             addresses = netifaces.ifaddresses(i)

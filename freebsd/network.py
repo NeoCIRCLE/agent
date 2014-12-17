@@ -3,60 +3,49 @@ from netaddr import IPNetwork
 import fileinput
 import logging
 import subprocess
+import os
+import os.path
 
 logger = logging.getLogger()
 
-interfaces_file = '/etc/rc.conf.d/ifconfig_'
+rcconf_dir = '/etc/rc.conf.d/'
 
 def get_interfaces_freebsd(interfaces):
     for ifname in netifaces.interfaces():
+        if ifname == 'lo0':
+            continue # XXXOP: ?
+        logger.debug("get_interfaces: " + ifname)
         mac = netifaces.ifaddresses(ifname)[18][0]['addr']
+        logger.debug("get_interfaces: " + mac)
         conf = interfaces.get(mac.upper())
         if conf:
             yield ifname, conf
 
 
-def remove_interfaces_ubuntu(devices):
+def remove_interfaces_freebsd(devices):
     delete_device = False
-
-    for line in fileinput.input(interfaces_file, inplace=True):
-        line = line.rstrip()
-        words = line.split()
-
-        if line.startswith('#') or line == '' or line.isspace() or not words:
-            # keep line
-            print line
-            continue
-
-        if (words[0] in ('auto', 'allow-hotplug') and
-                words[1].split(':')[0] in devices):
-            # remove line
-            continue
-
-        if words[0] == 'iface':
-            ifname = words[1].split(':')[0]
-            if ifname in devices:
-                # remove line
-                delete_device = True
-                continue
-            else:
-                delete_device = False
-
-        if line[0] in (' ', '\t') and delete_device:
-            # remove line
-            continue
-
-        # keep line
-        print line
+    for device in devices:
+        if_file = rcconf_dir + device
+        if os.path.isfile(if_file):
+            logger.debug("remove interface configuration: " + if_file)
+            os.unlink(if_file)
+        else:
+            logger.debug("unable to remove interface configuration: " + if_file)
 
 
 def change_ip_freebsd(interfaces, dns):
     data = list(get_interfaces_freebsd(interfaces))
 
+    print data
     for ifname, conf in data:
         subprocess.call(('/usr/sbin/service','netif', 'stop', ifname))
-    #remove_interfaces_ubuntu(dict(data).keys())
+    remove_interfaces_freebsd(dict(data).keys())
 
+    for device, conf in data:
+        if_file = rcconf_dir + device
+        with open(if_file, 'w') as f:
+            f.write('ifconfig_' + device + '="DHCP"') #XXXOP - hardcoded
+    '''
     with open(interfaces_file, 'a') as f:
         for ifname, conf in data:
             ipv4_alias_counter = ipv6_alias_counter = 0
@@ -87,6 +76,7 @@ def change_ip_freebsd(interfaces, dns):
                         'prefixlen': prefixlen,
                         'gw': conf['gw6' if ip.version == 6 else 'gw4'],
                         'dns': dns})
+    '''
     for ifname, conf in data:
         subprocess.call(('/usr/sbin/service', 'netif', 'start', ifname))
 
