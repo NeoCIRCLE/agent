@@ -6,7 +6,7 @@ logger = logging.getLogger()
 
 
 class SerialLineReceiverBase(LineReceiver, object):
-    delimiter = '\r'
+    delimiter = '\n'
     MAX_LENGTH = 1024*1024*128
 
     def send_response(self, response, args):
@@ -22,6 +22,9 @@ class SerialLineReceiverBase(LineReceiver, object):
 
     def handle_response(self, response, args):
         raise NotImplementedError("Subclass must implement abstract method")
+
+    def dataReceivedd(self, data):
+        print data
 
     def lineReceived(self, data):
         try:
