@@ -80,6 +80,7 @@ class Context(BaseContext):
 
     @staticmethod
     def restart_networking():
+        logger.debug("restart_networking")
         subprocess.call(['/usr/sbin/service', 'netif', 'restart'])
 
     @staticmethod

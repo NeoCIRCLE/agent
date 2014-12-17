@@ -1,5 +1,7 @@
 #!/bin/sh
 
+setenv LOGLEVEL DEBUG
+
 pkg install -y devel/git lang/python devel/py-pip sysutils/screen editors/vim-lite
 
 grep "^cloud:" /etc/passwd > /dev/null
