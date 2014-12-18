@@ -2,7 +2,7 @@
 
 export LOGLEVEL=DEBUG
 
-pkg install -y devel/git lang/python devel/py-pip sysutils/screen editors/vim-lite
+pkg install -y devel/git lang/python devel/py-pip sysutils/screen editors/vim-lite security/sudo
 
 grep "^cloud:" /etc/passwd > /dev/null
 ret=$?
@@ -12,6 +12,8 @@ then
 	pw user add cloud -m
 	pw group mod wheel -m cloud
 fi
+
+sed -i '.orig' -e 's/# \(%wheel ALL=(ALL) ALL\)/\1/g' /usr/local/etc/sudoers
 
 if [ ! -d /usr/ports ]
 then
