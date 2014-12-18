@@ -21,7 +21,7 @@ fi
 if [ ! -d /root/agent ]
 then
 	cd /root
-	git clone https://github.com/opntr/bme-circle-cloud-agent.git agent
+	git clone https://github.com/opntr/bme-cloud-circle-agent.git agent
 fi
 
 cd /root/agent
@@ -33,7 +33,7 @@ then
 	echo "patching /etc/rc.subr ..."
 	(
 	cd /etc
-	patch -p1 < /root/agent/bootstrap/freebsd/fix-rc.subr.diff
+	patch -p0 < /root/agent/bootstrap/freebsd/fix-rc.subr.diff
 	)
 fi
 
