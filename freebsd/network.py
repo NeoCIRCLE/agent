@@ -44,7 +44,7 @@ def change_ip_freebsd(interfaces, dns):
     for device, conf in data:
         if_file = rcconf_dir + device
         with open(if_file, 'w') as f:
-            f.write('ifconfig_' + device + '="DHCP"') #XXXOP - hardcoded
+            f.write('ifconfig_' + device + '="SYNCDHCP"') #XXXOP - hardcoded
     '''
     with open(interfaces_file, 'a') as f:
         for ifname, conf in data:
