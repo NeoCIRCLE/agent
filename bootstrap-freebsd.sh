@@ -21,8 +21,20 @@ fi
 if [ ! -d /root/agent ]
 then
 	cd /root
-	git clone https://git.ik.bme.hu/circle/agent.git
+	git clone https://github.com/opntr/bme-circle-cloud-agent.git agent
 fi
 
 cd /root/agent
+
+grep "If a service" /etc/rc.subr
+ret=$?
+if [ $ret -eq 0 ]
+then
+	echo "patching /etc/rc.subr ..."
+	(
+	cd /etc
+	patch -p1 < /root/agent/bootstrap/freebsd/fix-rc.subr.diff
+	)
+fi
+
 python agent.py
