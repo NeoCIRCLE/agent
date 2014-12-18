@@ -81,7 +81,9 @@ class Context(BaseContext):
     @staticmethod
     def restart_networking():
         logger.debug("restart_networking")
-        subprocess.call(['/usr/sbin/service', 'netif', 'restart'])
+        logger.debug("XXX restart_networking disabled")
+        pass
+        #subprocess.call(['/usr/sbin/service', 'netif', 'restart'])
 
     @staticmethod
     def change_ip(interfaces, dns):
