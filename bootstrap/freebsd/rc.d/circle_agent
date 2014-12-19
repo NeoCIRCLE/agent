@@ -11,9 +11,24 @@
 
 name="circle_agent"
 rcvar="circle_agent_enable"
-command="/usr/local/bin/python /root/agent/agent.py"
+pidfile="/var/run/${name}.pid"
+start_cmd="do_start"
+stop_cmd="do_stop"
 
-PATH=${PATH}:/usr/local/bin/
+do_start()
+{
+	PATH=${PATH}:/usr/local/bin/
+
+	daemon -P ${pidfile} -r /usr/local/bin/python /root/agent/agent.py
+}
+
+do_stop()
+{
+	if [ -f ${pidfile} ]
+	then
+		kill `cat ${pidfile}`
+	fi
+}
 
 load_rc_config $name
 run_rc_command "$1"
