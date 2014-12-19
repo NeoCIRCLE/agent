@@ -26,8 +26,6 @@ then
 	git clone https://github.com/opntr/bme-cloud-circle-agent.git agent
 fi
 
-cd /root/agent
-
 grep "If a service" /etc/rc.subr
 ret=$?
 if [ $ret -eq 0 ]
@@ -39,4 +37,15 @@ then
 	)
 fi
 
-python agent.py
+cd /root/agent
+if [ -d /usr/local/etc/rc.d ]
+then
+	cp bootstrap/freebsd/rc.d/circle_agent /usr/local/etc/rc.d
+fi
+
+if [ ! -f /etc/rc.conf.d/circle_agent ]
+then
+	echo 'circle_agent_enable="YES"' > /etc/rc.conf.d/circle_agent
+fi
+
+service circle_agent start
