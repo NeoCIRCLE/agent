@@ -11,8 +11,9 @@
 
 name="circle_agent"
 rcvar="circle_agent_enable"
-command="/usr/local/bin/python /root/agent.py"
-pidfile="/var/run/${name}.pid"
+command="/usr/local/bin/python /root/agent/agent.py"
+
+PATH=${PATH}:/usr/local/bin/
 
 load_rc_config $name
 run_rc_command "$1"
