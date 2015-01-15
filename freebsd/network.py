@@ -42,27 +42,28 @@ def change_ip_freebsd(interfaces, dns):
     remove_interfaces_freebsd(dict(data).keys())
 
     for device, conf in data:
-        if_file = rcconf_dir + device
+        if_file = rcconf_dir + "ifconfig_" + device
         with open(if_file, 'w') as f:
-            f.write('ifconfig_' + device + '="SYNCDHCP"') #XXXOP - hardcoded
-    '''
-    with open(interfaces_file, 'a') as f:
-        for ifname, conf in data:
             ipv4_alias_counter = ipv6_alias_counter = 0
-            f.write('auto %s\n' % ifname)
             for i in conf['addresses']:
+                alias=""
                 ip_with_prefix = IPNetwork(i)
-                prefixlen = ip_with_prefix.prefixlen
                 ip = ip_with_prefix.ip
-                alias = ifname
+                prefixlen = ip_with_prefix.prefixlen
                 if ip.version == 6:
+                    alias="_ipv6"
                     if ipv6_alias_counter > 0:
-                        alias = '%s:%d' % (ifname, ipv6_alias_counter)
+                        alias = '_alias%d' % (ipv6_alias_counter-1)
                     ipv6_alias_counter += 1
+                    f.write("ifconfig_" + device + alias + "=" +
+                        "\"inet6 %(ip)s prefix %(pref)s\"\n" % { 'ip' : ip, 'pref' : prefixlen })
                 else:
                     if ipv4_alias_counter > 0:
-                        alias = '%s:%d' % (ifname, ipv4_alias_counter)
+                        alias = '_alias%d' % (ipv4_alias_counter-1)
                     ipv4_alias_counter += 1
+                    f.write("ifconfig_" + device + alias + "=" + "\"inet %(ip)s/%(pref)s\"\n" % { 'ip' : ip, 'pref' : prefixlen })
+
+    '''
 
                 f.write(
                     'iface %(ifname)s %(proto)s static\n'
