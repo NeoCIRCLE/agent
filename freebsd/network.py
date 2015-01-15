@@ -45,6 +45,8 @@ def change_ip_freebsd(interfaces, dns):
         if_file = rcconf_dir + "ifconfig_" + device
         with open(if_file, 'w') as f:
             ipv4_alias_counter = ipv6_alias_counter = 0
+            route6 = "ipv6_static_routes=\""
+            route4 = "static_routes=\""
             for i in conf['addresses']:
                 alias=""
                 ip_with_prefix = IPNetwork(i)
@@ -57,29 +59,32 @@ def change_ip_freebsd(interfaces, dns):
                     ipv6_alias_counter += 1
                     f.write("ifconfig_" + device + alias + "=" +
                         "\"inet6 %(ip)s prefix %(pref)s\"\n" % { 'ip' : ip, 'pref' : prefixlen })
+                    route6_name=device+"R"+str(ipv6_alias_counter)+"v6"
+                    route6 += route6_name+":"+device+" "
+                    f.write("route_"+route6_name+"=\"-net %(netw)s0 -gateway %(gw)s\"\n" % { 'netw' : ip_with_prefix.network, 'gw' : conf['gw6']})
                 else:
                     if ipv4_alias_counter > 0:
-                        alias = '_alias%d' % (ipv4_alias_counter-1)
+                        # az aliasok szamanak folytonosnak kell lennie
+                        ipv4_alias_counter=ipv6_alias_counter+1
+                        alias = '_alias%d' % (ipv4_alias_counter)
                     ipv4_alias_counter += 1
                     f.write("ifconfig_" + device + alias + "=" + "\"inet %(ip)s/%(pref)s\"\n" % { 'ip' : ip, 'pref' : prefixlen })
+                    route4_name=device+"R"+str(ipv4_alias_counter)+"v4"
+                    route4 += route4_name+":"+device+" "
+                    f.write("route_"+route4_name+"=\"-net %(netw)s -gateway %(gw)s\"\n" % { 'netw' : ip_with_prefix.network, 'gw' : conf['gw4']})
+                    f.write("defaultrouter=\""+str(conf['gw4'])+"\"\n")
+            route4 += "\"\n"
+            route6 += "\"\n"
+            f.write(route4) 
+            f.write(route6) 
 
-    '''
+    with open("/etc/resolv.conf", "w") as f:
+        f.write("nameserver "+dns)
 
-                f.write(
-                    'iface %(ifname)s %(proto)s static\n'
-                    '    address %(ip)s\n'
-                    '    netmask %(prefixlen)d\n'
-                    '    gateway %(gw)s\n'
-                    '    dns-nameservers %(dns)s\n' % {
-                        'ifname': alias,
-                        'proto': 'inet6' if ip.version == 6 else 'inet',
-                        'ip': ip,
-                        'prefixlen': prefixlen,
-                        'gw': conf['gw6' if ip.version == 6 else 'gw4'],
-                        'dns': dns})
-    '''
     for ifname, conf in data:
         subprocess.call(('/usr/sbin/service', 'netif', 'start', ifname))
+
+    subprocess.call(('/usr/sbin/service', 'routing', 'start'))
 
 
 # example:
