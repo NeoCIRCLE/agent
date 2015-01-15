@@ -181,7 +181,10 @@ class Context(BaseContext):
             '/root/.bash_history'
             '/home/cloud/.bash_history'
             '/root/.ssh'
-            '/home/cloud/.ssh']
+            '/home/cloud/.ssh'
+            '/root/.lesshst'
+            '/root/.history'
+            '/root/.viminfo']
             + glob('/etc/ssh/ssh_host_*'))
         for f in filelist:
             rmtree(f, ignore_errors=True)
