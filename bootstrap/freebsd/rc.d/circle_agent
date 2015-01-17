@@ -19,7 +19,7 @@ do_start()
 {
 	PATH=${PATH}:/usr/local/bin/
 
-	daemon -P ${pidfile} -r /usr/local/bin/python /root/agent/agent.py
+	/usr/sbin/daemon -P ${pidfile} -r /usr/local/bin/python /root/agent/agent.py
 }
 
 do_stop()
