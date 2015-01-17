@@ -99,7 +99,7 @@ class Context(BaseContext):
 
     @staticmethod
     def set_hostname(hostname):
-        with open('/etc/hostname', 'w') as f:
+        with open('/etc/rc.conf.d/hostname', 'w') as f:
             f.write(hostname)
 
         with open('/etc/hosts', 'w') as f:
