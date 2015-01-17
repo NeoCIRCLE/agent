@@ -100,7 +100,7 @@ class Context(BaseContext):
     @staticmethod
     def set_hostname(hostname):
         with open('/etc/rc.conf.d/hostname', 'w') as f:
-            f.write(hostname)
+            f.write("hostname=\""+hostname+"\"")
 
         with open('/etc/hosts', 'w') as f:
             f.write("127.0.0.1 localhost\n"
