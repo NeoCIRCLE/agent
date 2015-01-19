@@ -61,6 +61,7 @@ def change_ip_freebsd(interfaces, dns):
                     route6_name=device+"R"+str(ipv6_alias_counter)+"v6"
                     route6 += route6_name+":"+device+" "
                     f.write("route_"+route6_name+"=\"-net %(netw)s0 -gateway %(gw)s\"\n" % { 'netw' : ip_with_prefix.network, 'gw' : conf['gw6']})
+                    f.write("ipv6_defaultrouter=\""+str(conf['gw6'])+"\"\n")
                 else:
                     if ipv4_alias_counter > 0:
                         # az aliasok szamanak folytonosnak kell lennie
