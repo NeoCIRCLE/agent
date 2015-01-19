@@ -20,6 +20,11 @@ then
 	git clone https://github.com/HardenedBSD/freebsd-ports.git /usr/ports
 fi
 
+if [ ! -d /store ]
+then
+	mkdir -p /store
+fi
+
 if [ ! -d /root/agent ]
 then
 	cd /root

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from os import mkdir, environ, chdir
+from os import mkdir, environ, chdir, chmod
 import platform
 from shutil import copy, rmtree, move
 import subprocess
@@ -13,6 +13,7 @@ working_directory = sys.path[0]
 try:
     # load virtio console driver, the device is /dev/ttyV0.1
     subprocess.call(('/sbin/kldload', '-n', 'virtio_console'))
+    subprocess.call(('/sbin/kldload', '-n', 'smbfs'))
     chdir(working_directory)
     subprocess.call(('/usr/local/bin/pip', 'install', '-r', 'requirements.txt'))
     copy("/root/agent/misc/vm_renewal", "/usr/local/bin/")
@@ -46,9 +47,15 @@ AUTHORIZED_KEYS = join(SSH_DIR, 'authorized_keys')
 
 STORE_DIR = '/store'
 
-mount_template_linux = (
-    '//%(host)s/%(username)s %(dir)s cifs username=%(username)s'
-    ',password=%(password)s,iocharset=utf8,uid=cloud  0  0\n')
+mount_template_freebsd = (
+    '//CLOUD/%(username)s %(dir)s smbfs '
+    'rw,-N,-ucloud,-U%(username)s  0  0\n')
+
+NSMBRC = '/etc/nsmb.conf'
+nsmbrc_template_freebsd = (
+    '[CLOUD:%(username)s]\n'
+    'addr=%(host)s\n'
+    'password=%(password)s\n')
 
 class Context(BaseContext):
 
@@ -116,11 +123,15 @@ class Context(BaseContext):
             mkdir(STORE_DIR)
         # TODO
         for line in fileinput.input('/etc/fstab', inplace=True):
-            if not (line.startswith('//') and ' cifs ' in line):
+            if not (line.startswith('//') and ' smbfs ' in line):
                 print line.rstrip()
 
+	with open(NSMBRC, 'w') as f:
+            chmod(NSMBRC, 0600)
+            f.write(nsmbrc_template_freebsd % data)
+
         with open('/etc/fstab', 'a') as f:
-            f.write(mount_template_linux % data)
+            f.write(mount_template_freebsd % data)
 
         subprocess.call('/sbin/mount -a', shell=True)
 
@@ -184,7 +195,8 @@ class Context(BaseContext):
             '/home/cloud/.ssh'
             '/root/.lesshst'
             '/root/.history'
-            '/root/.viminfo']
+            '/root/.viminfo'
+	    '/etc/nsmb.conf']
             + glob('/etc/ssh/ssh_host_*'))
         for f in filelist:
             rmtree(f, ignore_errors=True)
