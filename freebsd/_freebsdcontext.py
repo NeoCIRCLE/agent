@@ -55,6 +55,10 @@ NSMBRC = '/etc/nsmb.conf'
 nsmbrc_template_freebsd = (
     '[CLOUD:%(USERNAME)s]\n'
     'addr=%(host)s\n'
+    'password=%(password)s\n'
+    '\n'
+    '[CLOUD]\n'
+    'addr=%(host)s\n'
     'password=%(password)s\n')
 
 class Context(BaseContext):
@@ -117,7 +121,7 @@ class Context(BaseContext):
 
     @staticmethod
     def mount_store(host, username, password):
-	    data = {'host': host, 'username': username, 'password': password, 'USERNAME' : username.upper()}
+	data = {'host': host, 'username': username, 'password': password, 'USERNAME' : username.upper()}
         data['dir'] = STORE_DIR
         if not exists(STORE_DIR):
             mkdir(STORE_DIR)
