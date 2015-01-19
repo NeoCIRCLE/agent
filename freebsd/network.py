@@ -57,7 +57,7 @@ def change_ip_freebsd(interfaces, dns):
                         alias = '_alias%d' % (ipv6_alias_counter-1)
                     ipv6_alias_counter += 1
                     f.write("ifconfig_" + device + alias + "=" +
-                        "\"inet6 %(ip)s prefix %(pref)s\"\n" % { 'ip' : ip, 'pref' : prefixlen })
+                        "\"inet6 %(ip)s prefixlen %(pref)s\"\n" % { 'ip' : ip, 'pref' : prefixlen })
                     route6_name=device+"R"+str(ipv6_alias_counter)+"v6"
                     route6 += route6_name+":"+device+" "
                     f.write("route_"+route6_name+"=\"-net %(netw)s0 -gateway %(gw)s\"\n" % { 'netw' : ip_with_prefix.network, 'gw' : conf['gw6']})
