@@ -19,14 +19,28 @@ do_start()
 {
 	PATH=${PATH}:/usr/local/bin/
 
+	printf "start ${name}: "
+
 	/usr/sbin/daemon -P ${pidfile} -r /usr/local/bin/python /root/agent/agent.py
+	ret=$?
+	if [ "${ret}" = "0" ]
+       	then
+		echo "done."
+	else
+		echo "failed..."
+	fi
 }
 
 do_stop()
 {
+	printf "stop ${name}: "
 	if [ -f ${pidfile} ]
 	then
 		kill `cat ${pidfile}`
+		echo "done."
+	else
+		echo "not running..."
+		return 1
 	fi
 }
 
