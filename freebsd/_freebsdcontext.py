@@ -201,9 +201,15 @@ class Context(BaseContext):
             '/root/.ssh'
             '/home/cloud/.ssh'
             '/root/.lesshst'
+            '/home/cloud/.lesshst'
             '/root/.history'
+            '/home/cloud/.history'
             '/root/.viminfo'
-	    '/etc/nsmb.conf']
+            '/home/cloud/.viminfo'
+            '/etc/nsmb.conf'
+            '/root/.nsmbrc.conf'
+            '/home/cloud/.nsmbrc.conf'
+	    ]
             + glob('/etc/ssh/ssh_host_*'))
         for f in filelist:
             rmtree(f, ignore_errors=True)
