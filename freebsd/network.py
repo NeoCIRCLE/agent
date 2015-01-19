@@ -36,7 +36,6 @@ def remove_interfaces_freebsd(devices):
 def change_ip_freebsd(interfaces, dns):
     data = list(get_interfaces_freebsd(interfaces))
 
-    print data
     for ifname, conf in data:
         subprocess.call(('/usr/sbin/service','netif', 'stop', ifname))
     remove_interfaces_freebsd(dict(data).keys())

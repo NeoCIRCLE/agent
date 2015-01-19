@@ -24,7 +24,8 @@ class SerialLineReceiverBase(LineReceiver, object):
         raise NotImplementedError("Subclass must implement abstract method")
 
     def dataReceivedd(self, data):
-        print data
+        #print data
+	pass
 
     def lineReceived(self, data):
         try:
