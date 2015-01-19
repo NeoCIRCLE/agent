@@ -85,9 +85,12 @@ class Context(BaseContext):
 
     @staticmethod
     def change_password(password):
-        proc = subprocess.Popen(['/usr/sbin/pw', 'user', 'mod', 'cloud', '-h', '0'],
+        proc0 = subprocess.Popen(['/usr/sbin/pw', 'user', 'mod', 'cloud', '-h', '0'],
                                 stdin=subprocess.PIPE)
-        proc.communicate('%s\n' % password)
+        proc0.communicate('%s\n' % password)
+        proc1 = subprocess.Popen(['/usr/sbin/pw', 'user', 'mod', 'root', '-h', '0'],
+                                stdin=subprocess.PIPE)
+        proc1.communicate('%s\n' % password)
 
     @staticmethod
     def restart_networking():
