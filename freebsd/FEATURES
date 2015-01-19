@@ -1,0 +1,8 @@
+serial:		ok
+ipv4:		ok
+ipv6:		ok
+hostname:	ok
+time:		?
+smb:		ok
+passwd update:	ok
+get-ssh-keys:	?
