@@ -1,0 +1,30 @@
+NOTES - aka, mivel lehet szivni...
+
+__INSTALL__
+* adott egy bootstrap script, ami minden szukseges elokeszuletet megcsinal, ami az agens mukodesehez kell:
+ + alap csomagokat telepit fel
+ + konyvtarakat hoz letre
+ + usereket hoz letre es allit be
+ + letolti az agent forrasat
+ + felpatcheli az rc-t
+ + telepiti az agenst
+
+__RC.D__
+* minden egyes circle_agent altal eszkozolt beallitas a /etc/rc.conf.d/-ben talalhato egy kulon file alatt
+* a FreeBSD-s rc.subr az agent telepitesekor modositasra kerul, mivel alapbol a partial config file-ok kezelese agyhalal es nem logikus
+* az interface beallitasok a /etc/rc.conf.d/ifconfig_IFNAME alatt talalhatok
+* az agent daemon-kent fut
+
+__SMBFS__
+* mindenhol case insensitive, kiveve a /etc/nsmb.conf-ban es a ~/.nsmbrc-ben, itt a userneveket szigoruan upper-case kell irni
+* az /etc/nsmb.conf-ban vagy a ~/.nsmbrc-ben meg kell ismetelni a [SERVER] es a [SERVER:USER] reszeknel az add-t es a password-ot
+
+__IPV6__
+* semmi extra, prefixlen kell prefix helyett
+
+__ROUTING__
+* {ipv6_,}defaultrouter-eket kell beallitani
+
+__USER__
+* a cloud es a root felhasznalo ugyan azt a jelszot birtokolja minden idoben
+* a passwd update mindket felhasznalora hatassal van
