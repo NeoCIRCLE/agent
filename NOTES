@@ -28,3 +28,8 @@ __ROUTING__
 __USER__
 * a cloud es a root felhasznalo ugyan azt a jelszot birtokolja minden idoben
 * a passwd update mindket felhasznalora hatassal van
+
+__SERIAL__
+* virtios soros port elsodlegesen, utana hw soros
+* \r sorveg eseten hibas csomagok, FreeBSD-n \n az elvart
+
