@@ -15,7 +15,8 @@ try:
     subprocess.call(('/sbin/kldload', '-n', 'virtio_console'))
     subprocess.call(('/sbin/kldload', '-n', 'smbfs'))
     chdir(working_directory)
-    subprocess.call(('/usr/local/bin/pip', 'install', '-r', 'requirements.txt'))
+    subprocess.call(
+        ('/usr/local/bin/pip', 'install', '-r', 'requirements.txt'))
     copy("/root/agent/misc/vm_renewal", "/usr/local/bin/")
 except:
     pass  # hope it works
@@ -61,6 +62,7 @@ nsmbrc_template_freebsd = (
     'addr=%(host)s\n'
     'password=%(password)s\n')
 
+
 class Context(BaseContext):
 
     # http://stackoverflow.com/questions/12081310/
@@ -85,19 +87,18 @@ class Context(BaseContext):
 
     @staticmethod
     def change_password(password):
-        proc0 = subprocess.Popen(['/usr/sbin/pw', 'user', 'mod', 'cloud', '-h', '0'],
-                                stdin=subprocess.PIPE)
+        proc0 = subprocess.Popen(
+            ['/usr/sbin/pw', 'user', 'mod', 'cloud', '-h', '0'],
+            stdin=subprocess.PIPE)
         proc0.communicate('%s\n' % password)
-        proc1 = subprocess.Popen(['/usr/sbin/pw', 'user', 'mod', 'root', '-h', '0'],
-                                stdin=subprocess.PIPE)
+        proc1 = subprocess.Popen(
+            ['/usr/sbin/pw', 'user', 'mod', 'root', '-h', '0'],
+            stdin=subprocess.PIPE)
         proc1.communicate('%s\n' % password)
 
     @staticmethod
     def restart_networking():
         logger.debug("restart_networking")
-        #logger.debug("XXX restart_networking disabled")
-        pass
-        #subprocess.call(['/usr/sbin/service', 'netif', 'restart'])
 
     @staticmethod
     def change_ip(interfaces, dns):
@@ -124,7 +125,8 @@ class Context(BaseContext):
 
     @staticmethod
     def mount_store(host, username, password):
-	data = {'host': host, 'username': username, 'password': password, 'USERNAME' : username.upper()}
+        data = {'host': host, 'username': username, 'password': password,
+                'USERNAME': username.upper()}
         data['dir'] = STORE_DIR
         if not exists(STORE_DIR):
             mkdir(STORE_DIR)
@@ -133,7 +135,7 @@ class Context(BaseContext):
             if not (line.startswith('//') and ' smbfs ' in line):
                 print line.rstrip()
 
-	with open(NSMBRC, 'w') as f:
+        with open(NSMBRC, 'w') as f:
             chmod(NSMBRC, 0600)
             f.write(nsmbrc_template_freebsd % data)
 
@@ -209,7 +211,7 @@ class Context(BaseContext):
             '/etc/nsmb.conf'
             '/root/.nsmbrc.conf'
             '/home/cloud/.nsmbrc.conf'
-	    ]
+            ]
             + glob('/etc/ssh/ssh_host_*'))
         for f in filelist:
             rmtree(f, ignore_errors=True)

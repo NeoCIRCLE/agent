@@ -9,7 +9,7 @@ import sys
 
 system = platform.system()
 
-if system == "Linux" or system == "FreeBSD" :
+if system == "Linux" or system == "FreeBSD":
     try:
         chdir(sys.path[0])
         subprocess.call(('pip', 'install', '-r', 'requirements.txt'))
