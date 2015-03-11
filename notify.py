@@ -145,9 +145,15 @@ def mount_smb(url):
     data = urlsplit(url)
     share = data.path.lstrip('/')
     subprocess.call(('net', 'use', 'Z:', '/delete'))
-    subprocess.check_output((
-        'net', 'use', 'Z:', r'\\%s\%s' % (data.hostname, share),
-        data.password, '/user:%s' % data.username, '/PERSISTENT:YES'))
+    try:
+        p = subprocess.Popen((
+            'net', 'use', 'Z:', r'\\%s\%s' % (data.hostname, share),
+            data.password, '/user:%s' % data.username, '/PERSISTENT:YES'),
+            stderr=subprocess.PIPE, stdout=subprocess.PIPE,
+            stdin=subprocess.PIPE)
+        logger.info('mount_smb(): %s', p.communicate())
+    except:
+        logger.exception('Unhandled exception: ')
 
 
 def file_already_exists(name, mode=0o644):
