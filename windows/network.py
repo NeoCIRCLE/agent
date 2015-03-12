@@ -1,6 +1,6 @@
 from netaddr import IPNetwork, IPAddress
 import logging
-from subprocess import check_output, CalledProcessError
+from subprocess import check_output, PIPE, Popen
 
 logger = logging.getLogger()
 
@@ -38,8 +38,8 @@ def change_ip_windows(interfaces, dns):
 
         changed = (
             new_addrs_str != old_addrs_str or
-            set(nic.DefaultIPGateway) != set([conf['gw4'], conf['gw6']]))
-        if changed or 1:
+            set(nic.DefaultIPGateway) != set([conf.get('gw4'), conf('gw6')]))
+        if changed or 1:  # TODO
             logger.info('new config for <%s(%s)>: %s', nic.Description,
                         nic.MACAddress, ', '.join(new_addrs_str))
             # IPv4
@@ -53,36 +53,56 @@ def change_ip_windows(interfaces, dns):
                 IPAddress=ipv4_addrs, SubnetMask=ipv4_masks)
             assert retval == (0, )
 
-            nic.SetGateways(DefaultIPGateway=[conf['gw4']])
+            nic.SetGateways(DefaultIPGateway=[conf.get('gw4')])
             assert retval == (0, )
 
             # IPv6
             for ip in new_addrs:
                 if ip.version == 6 and str(ip) not in old_addrs_str:
-                    logger.debug('add %s (%s)', ip, nic.Description)
-                    check_output(
-                        'netsh interface ipv6 add address '
-                        'interface=%s address=%s'
-                        % (nic.InterfaceIndex, ip), shell=True)
+                    logger.info('add %s (%s)', ip, nic.Description)
+                    try:
+                        p = Popen((
+                            'netsh interface ipv6 add address '
+                            'interface=%s address=%s')
+                            % (nic.InterfaceIndex, ip), shell=True,
+                            stderr=PIPE, stdout=PIPE, stdin=PIPE)
+                        logger.info('netsh_add(): %s', p.communicate())
+                    except:
+                        logger.exception(
+                            'Unhandled exception in netsh_add(): ')
 
             for ip in old_addrs:
                 if ip.version == 6 and str(ip) not in new_addrs_str:
-                    logger.debug('delete %s (%s)', ip, nic.Description)
-                    check_output(
-                        'netsh interface ipv6 delete address '
-                        'interface=%s address=%s'
-                        % (nic.InterfaceIndex, ip.ip), shell=True)
+                    logger.info('del %s (%s)', ip, nic.Description)
+                    try:
+                        p = Popen((
+                            'netsh interface ipv6 delete address '
+                            'interface=%s address=%s')
+                            % (nic.InterfaceIndex, ip), shell=True,
+                            stderr=PIPE, stdout=PIPE, stdin=PIPE)
+                        logger.info('netsh_add(): %s', p.communicate())
+                    except:
+                        logger.exception(
+                            'Unhandled exception in netsh_del(): ')
 
+            # default gw6
             try:
                 check_output('netsh interface ipv6 del route ::/0 interface=%s'
                              % nic.InterfaceIndex, shell=True)
-            except CalledProcessError:
-                pass
-            check_output('netsh interface ipv6 add route ::/0 interface=%s %s'
-                         % (nic.InterfaceIndex, conf['gw6']), shell=True)
+            except:
+                logger.exception('Unhandled exception:')
+
+            try:
+                check_output(
+                    'netsh interface ipv6 add route ::/0 interface=%s %s'
+                    % (nic.InterfaceIndex, conf.get('gw6')), shell=True)
+            except:
+                logger.exception('Unhandled exception:')
+
+            # DNS
             try:
                 check_output('netsh interface ipv4 add dnsserver %s '
                              'address=%s index=1'
                              % (nic.InterfaceIndex, dns), shell=True)
-            except CalledProcessError:
-                pass
+            except:
+                logger.exception('Unhandled exception:')
