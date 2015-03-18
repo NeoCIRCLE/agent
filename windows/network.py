@@ -1,6 +1,6 @@
 from netaddr import IPNetwork, IPAddress
 import logging
-from subprocess import check_output, PIPE, Popen
+from subprocess import PIPE, Popen
 
 logger = logging.getLogger()
 
@@ -17,6 +17,23 @@ ifcfg_template = '/etc/sysconfig/network-scripts/ifcfg-%s'
 #    '8.8.8.8')
 
 
+class IPAddress2(IPNetwork):
+    def key(self):
+        return self._module.version, self._value, self._prefixlen
+
+
+def check_output2(cmd, shell=False):
+    try:
+        p = Popen(cmd, shell=shell,
+                  stderr=PIPE, stdout=PIPE, stdin=PIPE)
+        stdout, stderr = p.communicate()
+        logger.info('%s: %s, %s', cmd, stdout, stderr)
+        return stdout
+    except:
+        logger.exception(
+            'Unhandled exception in %s: ', cmd)
+
+
 def get_interfaces_windows(interfaces):
     import wmi
     nics = wmi.WMI().Win32_NetworkAdapterConfiguration(IPEnabled=True)
@@ -29,80 +46,63 @@ def get_interfaces_windows(interfaces):
 def change_ip_windows(interfaces, dns):
     for nic, conf in get_interfaces_windows(interfaces):
         link_local = IPNetwork('fe80::/16')
-        new_addrs = [IPNetwork(ip) for ip in conf['addresses']]
-        new_addrs_str = set(str(ip) for ip in new_addrs)
-        old_addrs = [IPNetwork('%s/%s' % (ip, nic.IPSubnet[i]))
-                     for i, ip in enumerate(nic.IPAddress)
-                     if IPAddress(ip) not in link_local]
-        old_addrs_str = set(str(ip) for ip in old_addrs)
+        new_addrs = set([IPAddress2(ip) for ip in conf['addresses']])
+        old_addrs = set([IPAddress2('%s/%s' % (ip, nic.IPSubnet[i]))
+                         for i, ip in enumerate(nic.IPAddress)
+                         if IPAddress(ip) not in link_local])
 
-        changed = (
-            new_addrs_str != old_addrs_str or
-            set(nic.DefaultIPGateway) != set([conf.get('gw4'), conf('gw6')]))
-        if changed or 1:  # TODO
+        addrs_add = new_addrs - old_addrs
+        addrs_del = old_addrs - new_addrs
+
+        changed = (addrs_add or addrs_del or
+                   set(nic.DefaultIPGateway) != set(
+                       [conf.get('gw4'), conf.get('gw6')]))
+        if changed:
             logger.info('new config for <%s(%s)>: %s', nic.Description,
-                        nic.MACAddress, ', '.join(new_addrs_str))
-            # IPv4
-            ipv4_addrs = [str(ip.ip) for ip in new_addrs
-                          if ip.version == 4]
-            ipv4_masks = [str(ip.netmask) for ip in new_addrs
-                          if ip.version == 4]
-            logger.debug('<%s>.EnableStatic(%s, %s) called', nic.Description,
-                         ipv4_addrs, ipv4_masks)
-            retval = nic.EnableStatic(
-                IPAddress=ipv4_addrs, SubnetMask=ipv4_masks)
-            assert retval == (0, )
+                        nic.MACAddress, ', '.join(conf['addresses']))
 
-            nic.SetGateways(DefaultIPGateway=[conf.get('gw4')])
-            assert retval == (0, )
+            for ip in addrs_add:
+                logger.info('add %s (%s)', ip, nic.Description)
+                if ip.version == 6:
+                    cmd = (
+                        'netsh interface ipv6 add address '
+                        'interface=%s address=%s'
+                        % (nic.InterfaceIndex, ip))
+                else:
+                    cmd = (
+                        'netsh interface ipv4 add address '
+                        '%s %s %s'
+                        % (nic.InterfaceIndex, ip.ip, ip.netmask))
 
-            # IPv6
-            for ip in new_addrs:
-                if ip.version == 6 and str(ip) not in old_addrs_str:
-                    logger.info('add %s (%s)', ip, nic.Description)
-                    try:
-                        p = Popen((
-                            'netsh interface ipv6 add address '
-                            'interface=%s address=%s')
-                            % (nic.InterfaceIndex, ip), shell=True,
-                            stderr=PIPE, stdout=PIPE, stdin=PIPE)
-                        logger.info('netsh_add(): %s', p.communicate())
-                    except:
-                        logger.exception(
-                            'Unhandled exception in netsh_add(): ')
+                check_output2(cmd, shell=True)
 
-            for ip in old_addrs:
-                if ip.version == 6 and str(ip) not in new_addrs_str:
-                    logger.info('del %s (%s)', ip, nic.Description)
-                    try:
-                        p = Popen((
-                            'netsh interface ipv6 delete address '
-                            'interface=%s address=%s')
-                            % (nic.InterfaceIndex, ip), shell=True,
-                            stderr=PIPE, stdout=PIPE, stdin=PIPE)
-                        logger.info('netsh_add(): %s', p.communicate())
-                    except:
-                        logger.exception(
-                            'Unhandled exception in netsh_del(): ')
+            for ip in addrs_del:
+                proto = 'ipv6' if ip.version == 6 else 'ipv4'
+                logger.info('del %s (%s)', ip, nic.Description)
+                check_output2(
+                    'netsh interface %s delete address '
+                    '%s %s'
+                    % (proto, nic.InterfaceIndex, ip.ip), shell=True)
+
+            # default gw4
+            if conf.get('gw4'):
+                check_output2(
+                    'netsh interface ip del route 0.0.0.0/0 interface=%s'
+                    % nic.InterfaceIndex, shell=True)
+                check_output2(
+                    'netsh interface ip add route 0.0.0.0/0 interface=%s %s'
+                    % (nic.InterfaceIndex, conf.get('gw4')), shell=True)
 
             # default gw6
-            try:
-                check_output('netsh interface ipv6 del route ::/0 interface=%s'
-                             % nic.InterfaceIndex, shell=True)
-            except:
-                logger.exception('Unhandled exception:')
-
-            try:
-                check_output(
+            if conf.get('gw6'):
+                check_output2(
+                    'netsh interface ipv6 del route ::/0 interface=%s'
+                    % nic.InterfaceIndex, shell=True)
+                check_output2(
                     'netsh interface ipv6 add route ::/0 interface=%s %s'
                     % (nic.InterfaceIndex, conf.get('gw6')), shell=True)
-            except:
-                logger.exception('Unhandled exception:')
 
             # DNS
-            try:
-                check_output('netsh interface ipv4 add dnsserver %s '
-                             'address=%s index=1'
-                             % (nic.InterfaceIndex, dns), shell=True)
-            except:
-                logger.exception('Unhandled exception:')
+            check_output2('netsh interface ipv4 add dnsserver %s '
+                          'address=%s index=1'
+                          % (nic.InterfaceIndex, dns), shell=True)
