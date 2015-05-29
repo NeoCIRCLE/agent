@@ -3,7 +3,6 @@
 
 from os import environ, chdir
 import platform
-from shutil import copy
 import subprocess
 import sys
 
@@ -13,8 +12,6 @@ if system == "Linux":
     try:
         chdir(sys.path[0])
         subprocess.call(('pip', 'install', '-r', 'requirements.txt'))
-        if system == 'Linux':
-            copy("/root/agent/misc/vm_renewal", "/usr/local/bin/")
     except:
         pass  # hope it works
 

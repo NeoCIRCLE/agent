@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import platform
-
-system = platform.system()
 working_directory = r"C:\circle"
 
-from os import environ
 from os.path import join
 
 import logging
@@ -25,10 +21,7 @@ from .network import change_ip_windows
 from context import BaseContext
 
 
-logging.basicConfig()
 logger = logging.getLogger()
-level = environ.get('LOGLEVEL', 'INFO')
-logger.setLevel(level)
 
 
 class Context(BaseContext):

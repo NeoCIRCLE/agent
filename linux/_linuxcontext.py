@@ -1,23 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from os import mkdir, environ, chdir
+from os import mkdir
 import platform
-from shutil import copy, rmtree, move
+from shutil import rmtree, move
 import subprocess
 import sys
 
-system = platform.system()
 working_directory = sys.path[0]
-
-try:
-    chdir(working_directory)
-    subprocess.call(('pip', 'install', '-r', 'requirements.txt'))
-    if system == 'Linux':
-        copy("/root/agent/misc/vm_renewal", "/usr/local/bin/")
-except:
-    pass  # hope it works
-
 
 import logging
 import fileinput
@@ -35,10 +25,7 @@ from context import BaseContext
 
 from twisted.internet import reactor
 
-logging.basicConfig()
 logger = logging.getLogger()
-level = environ.get('LOGLEVEL', 'INFO')
-logger.setLevel(level)
 
 SSH_DIR = expanduser('~cloud/.ssh')
 AUTHORIZED_KEYS = join(SSH_DIR, 'authorized_keys')
@@ -55,8 +42,7 @@ distros = {'Scientific Linux': 'rhel',
            'CentOS Linux': 'rhel',
            'Debian': 'debian',
            'Ubuntu': 'debian'}
-if system == 'Linux':
-    distro = distros[platform.linux_distribution()[0]]
+distro = distros[platform.linux_distribution()[0]]
 
 
 class Context(BaseContext):
