@@ -7,13 +7,17 @@ Virtio-Serial Port Protocol
 """
 
 # system imports
+import logging
 import os
+from time import sleep
 
 # dependent on pyserial ( http://pyserial.sf.net/ )
 # only tested w/ 1.18 (5 Dec 2002)
 
 # twisted imports
 from twisted.internet import abstract, fdesc
+
+logger = logging.getLogger()
 
 
 class SerialPort(abstract.FileDescriptor):
@@ -57,4 +61,8 @@ class SerialPort(abstract.FileDescriptor):
         """
         abstract.FileDescriptor.connectionLost(self, reason)
         os.close(self._serial)
-        self.protocol.connectionLost(reason)
+        sleep(2)
+        self._serial = os.open(
+            self.port, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+        self.startReading()
+        logger.info("Reconnecting")

@@ -57,6 +57,9 @@ class SerialLineReceiver(SerialLineReceiverBase):
             return d
         reactor.addSystemEventTrigger("before", "shutdown", shutdown)
 
+    def connectionLost(self, reason):
+        reactor.stop()
+
     def connectionLost2(self, reason):
         self.send_command(command='agent_stopped',
                           args={})
