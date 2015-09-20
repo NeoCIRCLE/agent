@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from os import mkdir
+from os import mkdir, remove, chown
+from pwd import getpwnam
 import platform
 from shutil import rmtree, move
 import subprocess
@@ -147,7 +148,6 @@ class Context(BaseContext):
 
     @staticmethod
     def _save_keys(keys):
-        print keys
         try:
             mkdir(SSH_DIR)
         except OSError:
@@ -155,6 +155,10 @@ class Context(BaseContext):
         with open(AUTHORIZED_KEYS, 'w') as f:
             for key in keys:
                 f.write(unicode(key) + '\n')
+
+        uid = getpwnam("cloud").pw_uid
+        chown(SSH_DIR, uid, -1)
+        chown(AUTHORIZED_KEYS, uid, -1)
 
     @staticmethod
     def add_keys(keys):
@@ -185,13 +189,16 @@ class Context(BaseContext):
     @staticmethod
     def cleanup():
         filelist = ([
-            '/root/.bash_history'
-            '/home/cloud/.bash_history'
-            '/root/.ssh'
-            '/home/cloud/.ssh']
-            + glob('/etc/ssh/ssh_host_*'))
+            '/root/.bash_history', '/home/cloud/.bash_history',
+            ] + glob('/etc/ssh/ssh_host_*'))
+        dirlist = ('/root/.ssh', '/home/cloud/.ssh')
+
+        for d in dirlist:
+            rmtree(d, ignore_errors=True)
+
         for f in filelist:
-            rmtree(f, ignore_errors=True)
+            if exists(f):
+                remove(f)
 
         subprocess.call(('/usr/bin/ssh-keygen', '-A'))
 
