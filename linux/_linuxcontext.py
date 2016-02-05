@@ -39,6 +39,7 @@ mount_template_linux = (
 
 
 distros = {'Scientific Linux': 'rhel',
+           'Oracle Linux Server': 'rhel',
            'CentOS': 'rhel',
            'CentOS Linux': 'rhel',
            'Debian': 'debian',

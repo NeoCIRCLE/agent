@@ -75,9 +75,9 @@ class SerialLineReceiver(SerialLineReceiverBase):
 
     def send_status(self):
         import psutil
-        disk_usage = {(disk.device.replace('/', '_')):
-                      psutil.disk_usage(disk.mountpoint).percent
-                      for disk in psutil.disk_partitions()}
+        disk_usage = dict((disk.device.replace('/', '_'),
+                           psutil.disk_usage(disk.mountpoint).percent)
+                          for disk in psutil.disk_partitions())
         args = {"cpu": dict(psutil.cpu_times()._asdict()),
                 "ram": dict(psutil.virtual_memory()._asdict()),
                 "swap": dict(psutil.swap_memory()._asdict()),
