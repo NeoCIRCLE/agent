@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-working_directory = r"C:\circle"
-
 from os.path import join
 
 import logging
@@ -20,6 +18,8 @@ from twisted.internet import reactor
 from .network import change_ip_windows
 from context import BaseContext
 
+
+working_directory = r"C:\circle"
 
 logger = logging.getLogger()
 

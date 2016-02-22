@@ -8,8 +8,6 @@ from shutil import rmtree, move
 import subprocess
 import sys
 
-working_directory = sys.path[0]
-
 import logging
 import fileinput
 import tarfile
@@ -19,12 +17,14 @@ from StringIO import StringIO
 from base64 import decodestring
 from hashlib import md5
 
-
 from ssh import PubKey
 from .network import change_ip_ubuntu, change_ip_rhel
 from context import BaseContext
 
 from twisted.internet import reactor
+
+
+working_directory = sys.path[0]
 
 logger = logging.getLogger()
 
@@ -51,6 +51,7 @@ class Context(BaseContext):
 
     # http://stackoverflow.com/questions/12081310/
     # python-module-to-change-system-date-and-time
+    @staticmethod
     def _linux_set_time(time):
         import ctypes
         import ctypes.util

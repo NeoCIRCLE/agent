@@ -2,6 +2,8 @@ from base64 import decodestring
 from struct import unpack
 import binascii
 
+import unittest
+
 
 class InvalidKeyType(Exception):
     pass
@@ -54,9 +56,6 @@ class PubKey(object):
 
     def __repr__(self):
         return u'<PubKey: %s>' % unicode(self)
-
-
-import unittest
 
 
 class SshTestCase(unittest.TestCase):

@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# flake8: noqa ignore=E402
 
 from os import environ, chdir
 import platform
 import subprocess
 import sys
+
 
 system = platform.system()
 
@@ -19,7 +21,6 @@ if system == "Linux":
 from twisted.internet import reactor, defer
 from twisted.internet.task import LoopingCall
 
-
 import uptime
 import logging
 from inspect import getargspec, isfunction
@@ -29,6 +30,7 @@ from utils import SerialLineReceiverBase
 # Note: Import everything because later we need to use the BaseContext
 # (relative import error.
 from context import BaseContext, get_context, get_serial  # noqa
+
 
 Context = get_context()
 
