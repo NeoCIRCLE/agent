@@ -51,6 +51,7 @@ class Context(BaseContext):
 
     # http://stackoverflow.com/questions/12081310/
     # python-module-to-change-system-date-and-time
+    @staticmethod
     def _linux_set_time(time):
         import ctypes
         import ctypes.util
